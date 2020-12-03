@@ -1,3 +1,7 @@
+0.9.7
+=====
+* Update DNS discovery so it works properly with EventStore Cloud.
+
 0.9.6
 =====
 * Add Debug instance for `SubEvent`.

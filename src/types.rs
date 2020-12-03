@@ -834,10 +834,7 @@ impl<A, B> Either<A, B> {
 
 #[derive(Debug)]
 pub(crate) struct DnsClusterSettings {
-    pub(crate) resolver: trust_dns_resolver::TokioAsyncResolver,
-    pub(crate) domain_name: trust_dns_resolver::Name,
-    pub(crate) gossip_port: u32,
-    pub(crate) lookup: LookupType,
+    pub(crate) endpoint: Endpoint,
 }
 
 #[derive(PartialEq, Eq, Serialize, Deserialize, Debug, Clone, Copy)]
