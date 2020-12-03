@@ -196,11 +196,6 @@ fn default_throw_on_append_failure() -> bool {
 ///
 /// * `throwOnAppendFailure`: default `true`. If the client raise an exception when facing a `WrongExpectedVersion`.
 ///    __*TODO - Not supported yet.*__
-///
-/// * `dnsLookUpType`: default `a`. DNS record type we are looking for during discovery of cluster
-///   nodes. Default behaviour is looking for A records. Supported values are:
-///   * `a`
-///   * `srv`
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 pub struct ClientSettings {
     #[serde(default)]
@@ -231,8 +226,6 @@ pub struct ClientSettings {
     pub(crate) throw_on_append_failure: bool,
     #[serde(default)]
     pub(crate) default_user_name: Option<Credentials>,
-    #[serde(default)]
-    pub(crate) dns_lookup_type: crate::LookupType,
 }
 
 impl ClientSettings {
@@ -401,24 +394,6 @@ impl ClientSettings {
                             }
                         }
 
-                        "dnsLookUpType" => {
-                            let value = values.as_slice()[1];
-
-                            match value {
-                                "a" => {
-                                    result.dns_lookup_type = crate::LookupType::LookupA;
-                                }
-
-                                "srv" => {
-                                    result.dns_lookup_type = crate::LookupType::LookupSRV;
-                                }
-
-                                _ => {
-                                    return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
-                                }
-                            }
-                        }
-
                         _ => {
                             continue;
                         }
@@ -483,7 +458,6 @@ impl Default for ClientSettings {
             tls_verify_cert: true,
             throw_on_append_failure: true,
             default_user_name: None,
-            dns_lookup_type: crate::LookupType::LookupA,
         }
     }
 }
