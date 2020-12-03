@@ -229,6 +229,46 @@ pub struct ClientSettings {
 }
 
 impl ClientSettings {
+    pub fn is_dns_discovery_enabled(&self) -> bool {
+        self.dns_discover
+    }
+
+    pub fn hosts(&self) -> &Vec<Endpoint> {
+        &self.hosts
+    }
+
+    pub fn max_discover_attempts(&self) -> usize {
+        self.max_discover_attempts
+    }
+
+    pub fn discovery_interval(&self) -> Duration {
+        self.discovery_interval
+    }
+
+    pub fn gossip_timeout(&self) -> Duration {
+        self.gossip_timeout
+    }
+
+    pub fn node_preference(&self) -> NodePreference {
+        self.preference
+    }
+
+    pub fn is_secure_mode_enabled(&self) -> bool {
+        self.secure
+    }
+
+    pub fn is_tls_certificate_verification_enabled(&self) -> bool {
+        self.tls_verify_cert
+    }
+
+    pub fn is_throw_on_append_failure_enabled(&self) -> bool {
+        self.throw_on_append_failure
+    }
+
+    pub fn default_authenticated_user(&self) -> &Option<Credentials> {
+        &self.default_user_name
+    }
+
     pub fn parse(input: &str) -> IResult<&str, Self> {
         let mut result: ClientSettings = Default::default();
         let mut parsed_authority = false;
