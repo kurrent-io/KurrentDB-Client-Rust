@@ -1,6 +1,4 @@
 //! Commands this client supports.
-use std::collections::HashMap;
-
 use futures::{stream, TryStreamExt};
 use futures::{Stream, StreamExt};
 
@@ -84,26 +82,15 @@ fn convert_event_data(event: EventData) -> streams::AppendReq {
     let id = event.id_opt.unwrap_or_else(uuid::Uuid::new_v4);
     let id = shared::uuid::Value::String(id.to_string());
     let id = Uuid { value: Some(id) };
-    let is_json = event.payload.is_json();
-    let mut metadata: HashMap<String, String> = HashMap::new();
     let custom_metadata = event
         .custom_metadata
-        .map_or_else(Vec::new, |p| (&*p.into_inner()).into());
-
-    let content_type = if is_json {
-        "application/json"
-    } else {
-        "application/octet-stream"
-    };
-
-    metadata.insert("type".into(), event.event_type);
-    metadata.insert("content-type".into(), content_type.into());
+        .map_or_else(Vec::new, |b| (&*b).into());
 
     let msg = append_req::ProposedMessage {
         id: Some(id),
-        metadata,
+        metadata: event.metadata,
         custom_metadata,
-        data: (&*event.payload.into_inner()).into(),
+        data: (&*event.payload).into(),
     };
 
     let content = append_req::Content::ProposedMessage(msg);
