@@ -113,18 +113,6 @@ fn convert_proto_recorded_event(
         prepare: event.prepare_position,
     };
 
-    let event_type = if let Some(tpe) = event.metadata.get("type") {
-        tpe.to_string()
-    } else {
-        "<no-event-type-provided>".to_string()
-    };
-
-    let is_json = if let Some(content_type) = event.metadata.get("content-type") {
-        matches!(content_type.as_str(), "application/json")
-    } else {
-        false
-    };
-
     let stream_id = String::from_utf8(
         event
             .stream_identifier
@@ -132,13 +120,12 @@ fn convert_proto_recorded_event(
             .stream_name,
     )
     .expect("It's always UTF-8");
+
     RecordedEvent {
         id,
         stream_id,
         revision: event.stream_revision,
         position,
-        event_type,
-        is_json,
         metadata: event.metadata,
         custom_metadata: event.custom_metadata.into(),
         data: event.data.into(),
@@ -146,7 +133,7 @@ fn convert_proto_recorded_event(
 }
 
 fn convert_persistent_proto_recorded_event(
-    mut event: persistent::read_resp::read_event::RecordedEvent,
+    event: persistent::read_resp::read_event::RecordedEvent,
 ) -> RecordedEvent {
     let id = event
         .id
@@ -156,22 +143,6 @@ fn convert_persistent_proto_recorded_event(
     let position = Position {
         commit: event.commit_position,
         prepare: event.prepare_position,
-    };
-
-    let event_type = if let Some(tpe) = event.metadata.remove(&"type".to_owned()) {
-        tpe
-    } else {
-        "<no-event-type-provided>".to_owned()
-    };
-
-    let is_json = if let Some(is_json) = event.metadata.remove(&"is-json".to_owned()) {
-        match is_json.to_lowercase().as_str() {
-            "true" => true,
-            "false" => false,
-            unknown => panic!("Unknown [{}] 'is-json' metadata value", unknown),
-        }
-    } else {
-        false
     };
 
     let stream_id = String::from_utf8(
@@ -187,8 +158,6 @@ fn convert_persistent_proto_recorded_event(
         stream_id,
         revision: event.stream_revision,
         position,
-        event_type,
-        is_json,
         metadata: event.metadata,
         custom_metadata: event.custom_metadata.into(),
         data: event.data.into(),

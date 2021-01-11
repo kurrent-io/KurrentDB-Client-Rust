@@ -234,9 +234,6 @@ pub struct RecordedEvent {
     /// Number of this event in the stream.
     pub revision: u64,
 
-    /// Type of this event.
-    pub event_type: String,
-
     /// Payload of this event.
     pub data: Bytes,
 
@@ -246,14 +243,33 @@ pub struct RecordedEvent {
     /// Representing the user-defined metadata associated with this event.
     pub custom_metadata: Bytes,
 
-    /// Indicates wheter the content is internally marked as JSON.
-    pub is_json: bool,
-
     /// An event position in the $all stream.
     pub position: Position,
 }
 
 impl RecordedEvent {
+    /// Type of this event.
+    pub fn event_type(&self) -> &str {
+        if let Some(tpe) = self.metadata.get("type") {
+            &tpe
+        } else {
+            "<no-event-type-provided>"
+        }
+    }
+
+    /// Indicates whether the content is internally marked as JSON.
+    pub fn is_json(&self) -> bool {
+        if let Some(is_json) = self.metadata.get("is-json") {
+            match is_json.to_lowercase().as_str() {
+                "true" => true,
+                "false" => false,
+                unknown => panic!("Unknown [{}] 'is-json' metadata value", unknown),
+            }
+        } else {
+            false
+        }
+    }
+
     /// Tries to decode this event payload as a JSON object.
     pub fn as_json<'a, T>(&'a self) -> serde_json::Result<T>
     where
