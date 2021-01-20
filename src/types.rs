@@ -5,8 +5,8 @@ use std::collections::HashMap;
 use std::time::Duration;
 
 use bytes::Bytes;
-use serde::de::{Deserialize, Visitor};
-use serde::ser::Serialize;
+use serde::de::Visitor;
+use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use futures::Stream;

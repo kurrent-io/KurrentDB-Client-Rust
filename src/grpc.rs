@@ -15,6 +15,7 @@ use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::{RngCore, SeedableRng};
 use serde::de::Visitor;
+use serde::{Deserialize, Serialize};
 use serde::{Deserializer, Serializer};
 use std::cmp::Ordering;
 use std::str::FromStr;
@@ -293,7 +294,10 @@ impl ClientSettings {
                 }
 
                 _ => {
-                    return Err(nom::Err::Failure((input, ErrorKind::ParseTo)));
+                    return Err(nom::Err::Failure(nom::error::Error::new(
+                        input,
+                        ErrorKind::ParseTo,
+                    )));
                 }
             }
 
@@ -330,12 +334,18 @@ impl ClientSettings {
                             port,
                         });
                     } else {
-                        return Err(nom::Err::Failure((input, ErrorKind::ParseTo)));
+                        return Err(nom::Err::Failure(nom::error::Error::new(
+                            input,
+                            ErrorKind::ParseTo,
+                        )));
                     }
                 }
 
                 _ => {
-                    return Err(nom::Err::Failure((input, ErrorKind::ParseTo)));
+                    return Err(nom::Err::Failure(nom::error::Error::new(
+                        input,
+                        ErrorKind::ParseTo,
+                    )));
                 }
             }
         }
@@ -356,7 +366,10 @@ impl ClientSettings {
                             if let Ok(attempt) = value.parse() {
                                 result.max_discover_attempts = attempt;
                             } else {
-                                return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
+                                return Err(nom::Err::Failure(nom::error::Error::new(
+                                    value,
+                                    ErrorKind::ParseTo,
+                                )));
                             }
                         }
 
@@ -365,7 +378,10 @@ impl ClientSettings {
                             if let Ok(millis) = value.parse() {
                                 result.discovery_interval = Duration::from_millis(millis);
                             } else {
-                                return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
+                                return Err(nom::Err::Failure(nom::error::Error::new(
+                                    value,
+                                    ErrorKind::ParseTo,
+                                )));
                             }
                         }
 
@@ -374,7 +390,10 @@ impl ClientSettings {
                             if let Ok(millis) = value.parse() {
                                 result.gossip_timeout = Duration::from_millis(millis);
                             } else {
-                                return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
+                                return Err(nom::Err::Failure(nom::error::Error::new(
+                                    value,
+                                    ErrorKind::ParseTo,
+                                )));
                             }
                         }
 
@@ -383,7 +402,10 @@ impl ClientSettings {
                             if let Ok(bool) = value.parse() {
                                 result.secure = bool;
                             } else {
-                                return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
+                                return Err(nom::Err::Failure(nom::error::Error::new(
+                                    value,
+                                    ErrorKind::ParseTo,
+                                )));
                             }
                         }
 
@@ -392,7 +414,10 @@ impl ClientSettings {
                             if let Ok(bool) = value.parse() {
                                 result.tls_verify_cert = bool;
                             } else {
-                                return Err(nom::Err::Failure((value, ErrorKind::ParseTo)));
+                                return Err(nom::Err::Failure(nom::error::Error::new(
+                                    value,
+                                    ErrorKind::ParseTo,
+                                )));
                             }
                         }
 
@@ -416,7 +441,7 @@ impl ClientSettings {
                                 }
 
                                 _ => {
-                                    return Err(nom::Err::Failure((
+                                    return Err(nom::Err::Failure(nom::error::Error::new(
                                         values.as_slice()[1],
                                         ErrorKind::ParseTo,
                                     )));
@@ -429,7 +454,10 @@ impl ClientSettings {
                         }
                     }
                 } else {
-                    return Err(nom::Err::Failure((param, ErrorKind::ParseTo)));
+                    return Err(nom::Err::Failure(nom::error::Error::new(
+                        param,
+                        ErrorKind::ParseTo,
+                    )));
                 }
             }
 
@@ -443,13 +471,15 @@ impl ClientSettings {
         match complete(ClientSettings::parse)(input) {
             Ok((_, setts)) => Ok(setts),
             Err(err_type) => match err_type {
-                nom::Err::Error((input, _)) => Err(ClientSettingsParseError {
+                nom::Err::Error(nom::error::Error { input, .. }) => Err(ClientSettingsParseError {
                     input: input.to_string(),
                 }),
 
-                nom::Err::Failure((input, _)) => Err(ClientSettingsParseError {
-                    input: input.to_string(),
-                }),
+                nom::Err::Failure(nom::error::Error { input, .. }) => {
+                    Err(ClientSettingsParseError {
+                        input: input.to_string(),
+                    })
+                }
 
                 nom::Err::Incomplete(_) => Err(ClientSettingsParseError {
                     input: "Incomplete connection string".to_string(),

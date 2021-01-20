@@ -35,7 +35,7 @@ jobs:
     - name: Run Tests
       run: |
         docker-compose up -d
-        RUST_BACKTRACE='1' RUST_LOG='integration=debug,eventstore=debug' cargo test
+        RUST_BACKTRACE='1' RUST_LOG='integration=debug,eventstore=debug' cargo test --no-fail-fast
 
   linting:
     name: Linting

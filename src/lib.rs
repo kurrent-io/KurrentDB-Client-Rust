@@ -63,10 +63,6 @@
 //! ```
 //! [EventStoreDB]: https://eventstore.com/
 //! [eventstoredb docs]: https://developers.eventstore.com/server/20.6/server/installation/
-
-#[macro_use]
-extern crate serde_derive;
-
 #[macro_use]
 extern crate log;
 
