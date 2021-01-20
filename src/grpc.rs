@@ -617,7 +617,7 @@ async fn cluster_mode(
                         }
 
                         if discovery_att_count < conn_setts.max_discover_attempts() {
-                            tokio::time::delay_for(conn_setts.discovery_interval).await;
+                            tokio::time::sleep(conn_setts.discovery_interval).await;
                             discovery_att_count += 1;
                             work_queue.push(Msg::CreateChannel(id, seed_opt));
                             continue;
@@ -688,7 +688,7 @@ fn single_node_mode(conn_setts: ClientSettings, endpoint: Endpoint) -> Unbounded
                                     err
                                 );
 
-                                tokio::time::delay_for(conn_setts.discovery_interval).await;
+                                tokio::time::sleep(conn_setts.discovery_interval).await;
                                 work_queue.push(Msg::CreateChannel(id, seed_opt));
                             }
                         }

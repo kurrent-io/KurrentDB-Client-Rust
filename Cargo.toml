@@ -23,22 +23,21 @@ exclude = [
 categories = ["database", "api-bindings"]
 
 [dependencies]
-tokio = "0.2"
-tokio-byteorder = "0.2"
+tokio = { version = "1", features = ["time"] }
 futures = "0.3"
 uuid = { version  = "0.8", features = [ "v4", "serde" ] }
 bytes = "0.5"
-serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 log = "0.4"
 rand = { version = "0.7", features = ["small_rng"] }
 byteorder = "1.2"
 http = "0.2"
-tonic = { version = "0.3", features = ["tls", "tls-roots"] }
-prost = "0.6"
-prost-derive = "0.6"
-prost-types = "0.6"
-rustls = { version = "0.18", features = ["dangerous_configuration"] }
+tonic = { version = "0.4", features = ["tls", "tls-roots"] }
+prost = "0.7"
+prost-derive = "0.7"
+prost-types = "0.7"
+rustls = { version = "0.19", features = ["dangerous_configuration"] }
 webpki = "0.21"
 base64 = "0.13"
 nom = "6"
@@ -52,9 +51,9 @@ name = "integration"
 
 [dev-dependencies]
 pretty_env_logger = "0.4"
-tokio-test = "0.2"
+tokio-test = "0.4"
 toml = "0.5"
-tokio = { version = "0.2", features = ["macros"] }
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 
 [package.metadata.docs.rs]
 all-features = true
