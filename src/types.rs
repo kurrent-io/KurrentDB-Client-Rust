@@ -363,12 +363,9 @@ impl EventData {
         S: AsRef<str>,
     {
         let payload = Bytes::from(serde_json::to_vec(&payload)?);
-        let metadata = vec![
-            ("type".to_owned(), event_type.as_ref().to_owned()),
-            ("content-type".to_owned(), "application/json".to_owned()),
-        ]
-        .into_iter()
-        .collect();
+        let mut metadata = HashMap::new();
+        metadata.insert("type".to_owned(), event_type.as_ref().to_owned());
+        metadata.insert("content-type".to_owned(), "application/json".to_owned());
 
         Ok(EventData {
             payload,
@@ -383,12 +380,9 @@ impl EventData {
     where
         S: AsRef<str>,
     {
-        let metadata = vec![
-            ("type".to_owned(), event_type.as_ref().to_owned()),
-            ("content-type".to_owned(), "application/json".to_owned()),
-        ]
-        .into_iter()
-        .collect();
+        let mut metadata = HashMap::new();
+        metadata.insert("type".to_owned(), event_type.as_ref().to_owned());
+        metadata.insert("content-type".to_owned(), "application/json".to_owned());
 
         EventData {
             payload,
