@@ -382,7 +382,10 @@ impl EventData {
     {
         let mut metadata = HashMap::new();
         metadata.insert("type".to_owned(), event_type.as_ref().to_owned());
-        metadata.insert("content-type".to_owned(), "application/json".to_owned());
+        metadata.insert(
+            "content-type".to_owned(),
+            "application/octet-stream".to_owned(),
+        );
 
         EventData {
             payload,
