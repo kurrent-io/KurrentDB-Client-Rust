@@ -17,7 +17,6 @@ type Result<A> = std::result::Result<A, Box<dyn Error>>;
 
 pub async fn append_to_stream(client: &Client) -> Result<()> {
     // region append-to-stream
-
     let data = TestEvent {
         id: "1".to_string(),
         important_data: "some value".to_string(),
@@ -29,7 +28,6 @@ pub async fn append_to_stream(client: &Client) -> Result<()> {
     let _ = client
         .append_to_stream("some-stream", &options, event)
         .await?;
-
     // endregion append-to-stream
 
     Ok(())
@@ -37,7 +35,6 @@ pub async fn append_to_stream(client: &Client) -> Result<()> {
 
 pub async fn append_with_same_id(client: &Client) -> Result<()> {
     // region append-duplicate-event
-
     let data = TestEvent {
         id: "1".to_string(),
         important_data: "some value".to_string(),
@@ -53,7 +50,6 @@ pub async fn append_with_same_id(client: &Client) -> Result<()> {
     let _ = client
         .append_to_stream("same-event-stream", &options, event)
         .await?;
-
     // endregion append-duplicate-event
 
     Ok(())
@@ -61,7 +57,6 @@ pub async fn append_with_same_id(client: &Client) -> Result<()> {
 
 pub async fn append_with_no_stream(client: &Client) -> Result<()> {
     // region append-with-no-stream
-
     let data = TestEvent {
         id: "1".to_string(),
         important_data: "some value".to_string(),
@@ -84,7 +79,6 @@ pub async fn append_with_no_stream(client: &Client) -> Result<()> {
     let _ = client
         .append_to_stream("same-event-stream", &options, event)
         .await?;
-
     // endregion append-with-no-stream
 
     Ok(())
@@ -92,7 +86,6 @@ pub async fn append_with_no_stream(client: &Client) -> Result<()> {
 
 pub async fn append_with_concurrency_check(client: Client) -> Result<()> {
     // region append-with-concurrency-check
-
     let options = ReadStreamOptions::default().position(StreamPosition::End);
 
     let last_event = client
@@ -126,7 +119,6 @@ pub async fn append_with_concurrency_check(client: Client) -> Result<()> {
     let _ = client
         .append_to_stream("concurrency-stream", &options, event)
         .await?;
-
     // endregion append-with-concurrency-check
 
     Ok(())
@@ -147,7 +139,6 @@ pub async fn append_overriding_user_credentials(client: &Client) -> Result<()> {
     let _ = client
         .append_to_stream("some-stream", &options, event)
         .await?;
-
     // endregion overriding-user-credentials
 
     Ok(())

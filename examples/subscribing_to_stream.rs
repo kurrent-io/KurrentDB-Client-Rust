@@ -57,7 +57,6 @@ pub async fn subscribe_to_stream(client: &Client) -> Result<()> {
             stream = client.subscribe_to_stream("some-stream", &options).await?;
         }
     }
-
     // endregion subscribe-to-stream-subscription-dropped
 
     Ok(())
@@ -112,12 +111,11 @@ pub async fn subscribe_to_filtered(client: &Client) -> Result<()> {
     let options = SubscribeToAllOptions::default().filter(filter);
 
     client.subscribe_to_all(&options).await?;
-
     // endregion stream-prefix-filtered-subscription
 
     // region stream-regex-filtered-subscription
     let filter = SubscriptionFilter::on_stream_name().regex("/invoice-\\d\\d\\d/g");
-    // region stream-regex-filtered-subscription
+    // endregion stream-regex-filtered-subscription
 
     Ok(())
 }

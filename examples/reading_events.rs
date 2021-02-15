@@ -128,7 +128,7 @@ pub async fn read_from_all_stream(client: &Client) -> Result<()> {
 }
 
 pub async fn read_all_overriding_user_credentials(client: &Client) -> Result<()> {
-    // region read-from-all-stream
+    // region read-all-overriding-user-credentials
     let options = ReadAllOptions::default()
         .authenticated(Credentials::new("admin", "changeit"))
         .position(StreamPosition::Point(Position {
@@ -136,7 +136,7 @@ pub async fn read_all_overriding_user_credentials(client: &Client) -> Result<()>
             prepare: 1_110,
         }));
     let events = client.read_all(&options, All).await?;
-    // endregion read-from-all-stream
+    // endregion read-all-overriding-user-credentials
 
     Ok(())
 }

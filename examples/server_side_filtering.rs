@@ -16,7 +16,7 @@ struct TestEvent {
 type Result<A> = std::result::Result<A, Box<dyn Error>>;
 
 pub async fn exclude_system_events(client: &Client) -> Result<()> {
-    //region exclude-system
+    // region exclude-system
     let filter = SubscriptionFilter::on_event_type().regex("/^[^\\$].*/");
     let options = SubscribeToAllOptions::default().filter(filter);
 
@@ -30,18 +30,18 @@ pub async fn exclude_system_events(client: &Client) -> Result<()> {
             println!("Received event {}@{}", revision, stream_id);
         }
     }
-    //endregion exclude-system
+    // endregion exclude-system
 
     Ok(())
 }
 
 pub async fn event_type_prefix(client: &Client) -> Result<()> {
-    //region event-type-prefix
+    // region event-type-prefix
     let filter = SubscriptionFilter::on_event_type().add_prefix("customer-");
     let options = SubscribeToAllOptions::default().filter(filter);
 
     let mut sub = client.subscribe_to_all(&options).await?;
-    //endregion event-type-prefix
+    // endregion event-type-prefix
 
     while let Some(event) = sub.try_next().await? {
         if let SubEvent::EventAppeared(event) = event {
@@ -56,12 +56,12 @@ pub async fn event_type_prefix(client: &Client) -> Result<()> {
 }
 
 pub async fn event_type_regex(client: &Client) -> Result<()> {
-    //region event-type-regex
+    // region event-type-regex
     let filter = SubscriptionFilter::on_event_type().regex("^user|^company");
     let options = SubscribeToAllOptions::default().filter(filter);
 
     let mut sub = client.subscribe_to_all(&options).await?;
-    //endregion event-type-regex
+    // endregion event-type-regex
 
     while let Some(event) = sub.try_next().await? {
         if let SubEvent::EventAppeared(event) = event {
@@ -76,12 +76,12 @@ pub async fn event_type_regex(client: &Client) -> Result<()> {
 }
 
 pub async fn stream_prefix(client: &Client) -> Result<()> {
-    //region stream-prefix
+    // region stream-prefix
     let filter = SubscriptionFilter::on_stream_name().add_prefix("user-");
     let options = SubscribeToAllOptions::default().filter(filter);
 
     let mut sub = client.subscribe_to_all(&options).await?;
-    //endregion stream-prefix
+    // endregion stream-prefix
 
     while let Some(event) = sub.try_next().await? {
         if let SubEvent::EventAppeared(event) = event {
@@ -96,12 +96,12 @@ pub async fn stream_prefix(client: &Client) -> Result<()> {
 }
 
 pub async fn stream_regex(client: &Client) -> Result<()> {
-    //region stream-regex
+    // region stream-regex
     let filter = SubscriptionFilter::on_event_type().regex("/^[^\\$].*/");
     let options = SubscribeToAllOptions::default().filter(filter);
 
     let mut sub = client.subscribe_to_all(&options).await?;
-    //endregion stream-regex
+    // endregion stream-regex
 
     while let Some(event) = sub.try_next().await? {
         if let SubEvent::EventAppeared(event) = event {
@@ -116,13 +116,14 @@ pub async fn stream_regex(client: &Client) -> Result<()> {
 }
 
 pub async fn checkpoint_callback_with_interval(client: &Client) -> Result<()> {
-    //region checkpoint-with-interval
+    // region checkpoint-with-interval
     let filter = SubscriptionFilter::on_event_type().regex("/^[^\\$].*/");
     let options = SubscribeToAllOptions::default().filter(filter);
 
     let mut sub = client.subscribe_to_all(&options).await?;
-    //endregion checkpoint-with-interval
-    //region checkpoint
+    // endregion checkpoint-with-interval
+
+    // region checkpoint
     while let Some(event) = sub.try_next().await? {
         match event {
             SubEvent::EventAppeared(event) => {
@@ -139,7 +140,7 @@ pub async fn checkpoint_callback_with_interval(client: &Client) -> Result<()> {
             _ => {}
         }
     }
-    //endregion checkpoint
+    // endregion checkpoint
 
     Ok(())
 }
