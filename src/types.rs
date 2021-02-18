@@ -990,6 +990,70 @@ impl<'a> ToCount<'a> for usize {
     }
 }
 
+#[async_trait]
+impl<'a> ToCount<'a> for u64 {
+    type Selection = BoxStream<'a, crate::Result<ResolvedEvent>>;
+
+    fn to_count(&self) -> usize {
+        *self as usize
+    }
+
+    async fn select(
+        self,
+        stream: BoxStream<'a, crate::Result<ResolvedEvent>>,
+    ) -> crate::Result<Self::Selection> {
+        Ok(stream)
+    }
+}
+
+#[async_trait]
+impl<'a> ToCount<'a> for u32 {
+    type Selection = BoxStream<'a, crate::Result<ResolvedEvent>>;
+
+    fn to_count(&self) -> usize {
+        *self as usize
+    }
+
+    async fn select(
+        self,
+        stream: BoxStream<'a, crate::Result<ResolvedEvent>>,
+    ) -> crate::Result<Self::Selection> {
+        Ok(stream)
+    }
+}
+
+#[async_trait]
+impl<'a> ToCount<'a> for u16 {
+    type Selection = BoxStream<'a, crate::Result<ResolvedEvent>>;
+
+    fn to_count(&self) -> usize {
+        *self as usize
+    }
+
+    async fn select(
+        self,
+        stream: BoxStream<'a, crate::Result<ResolvedEvent>>,
+    ) -> crate::Result<Self::Selection> {
+        Ok(stream)
+    }
+}
+
+#[async_trait]
+impl<'a> ToCount<'a> for u8 {
+    type Selection = BoxStream<'a, crate::Result<ResolvedEvent>>;
+
+    fn to_count(&self) -> usize {
+        *self as usize
+    }
+
+    async fn select(
+        self,
+        stream: BoxStream<'a, crate::Result<ResolvedEvent>>,
+    ) -> crate::Result<Self::Selection> {
+        Ok(stream)
+    }
+}
+
 /// Get all the stream's events.
 pub struct All;
 
