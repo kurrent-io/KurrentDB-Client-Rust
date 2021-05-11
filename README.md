@@ -31,7 +31,7 @@ struct Foo {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Creates a client settings for a single node configuration.
-    let settings = "esdb://admin:changeit@localhost:2113".parse()?;
+    let settings = "esdb://admin:changeit@localhost:2113?tls=false".parse()?;
     let client = Client::create(settings).await?;
 
     let payload = Foo {
