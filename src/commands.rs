@@ -99,6 +99,26 @@ fn convert_event_data(event: EventData) -> streams::AppendReq {
     }
 }
 
+fn convert_event_data_to_batch_proposed_message(
+    event: EventData,
+) -> streams::batch_append_req::ProposedMessage {
+    use streams::batch_append_req;
+
+    let id = event.id_opt.unwrap_or_else(uuid::Uuid::new_v4);
+    let id = shared::uuid::Value::String(id.to_string());
+    let id = Uuid { value: Some(id) };
+    let custom_metadata = event
+        .custom_metadata
+        .map_or_else(Vec::new, |b| (&*b).into());
+
+    batch_append_req::ProposedMessage {
+        id: Some(id),
+        metadata: event.metadata,
+        custom_metadata,
+        data: (&*event.payload).into(),
+    }
+}
+
 fn convert_proto_recorded_event(
     event: streams::read_resp::read_event::RecordedEvent,
 ) -> RecordedEvent {
@@ -418,6 +438,55 @@ where
             }
         }
     }).await
+}
+
+pub async fn batch_append<'a, Events, S: AsRef<str>>(
+    connection: &GrpcClient,
+    mut events: Events,
+) -> crate::Result<BoxStream<'a, crate::Result<ResolvedEvent>>>
+where
+    Events: Stream<Item = crate::types::Batch> + Send + Sync + Unpin + 'static,
+{
+    use streams::{
+        batch_append_req::{options::ExpectedStreamPosition, Options, ProposedMessage},
+        BatchAppendReq,
+    };
+
+    let stream = async_stream::stream! {
+        while let Some(batch) = events.next().await {
+            let correlation_id = shared::uuid::Value::String(batch.correlation_id.to_string());
+            let correlation_id = Some(Uuid { value: Some(correlation_id) });
+            let stream_identifier = Some(StreamIdentifier {
+                stream_name: batch.stream_name.into_bytes(),
+            });
+
+            let expected_stream_position = match batch.expected_version {
+                ExpectedRevision::Exact(rev) => ExpectedStreamPosition::StreamPosition(rev),
+                ExpectedRevision::NoStream => ExpectedStreamPosition::NoStream(()),
+                ExpectedRevision::StreamExists => ExpectedStreamPosition::StreamExists(()),
+                ExpectedRevision::Any => ExpectedStreamPosition::Any(()),
+            };
+
+            let proposed_messages: Vec<ProposedMessage> = batch.events.into_iter().map(convert_event_data_to_batch_proposed_message).collect();
+
+            let expected_stream_position = Some(expected_stream_position);
+
+            let options = Some(Options {
+                stream_identifier,
+                deadline: None,
+                expected_stream_position,
+            });
+
+            yield (BatchAppendReq {
+                correlation_id,
+                options,
+                proposed_messages,
+                is_final: batch.is_final,
+            });
+        };
+    };
+
+    todo!()
 }
 
 /// Sends asynchronously the read command to the server.

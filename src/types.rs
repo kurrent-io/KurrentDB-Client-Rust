@@ -1055,3 +1055,11 @@ impl SubscriptionFilter {
         self
     }
 }
+
+pub struct Batch {
+    pub correlation_id: Uuid,
+    pub stream_name: String,
+    pub expected_version: ExpectedRevision,
+    pub events: Vec<EventData>,
+    pub is_final: bool,
+}
