@@ -1,9 +1,10 @@
-use crate::{Credentials, PersistentSubscriptionSettings};
+use crate::{Credentials, PersistentSubscriptionSettings, StreamPosition};
 
 #[derive(Clone)]
 pub struct PersistentSubscriptionOptions {
     pub(crate) credentials: Option<Credentials>,
     pub(crate) setts: PersistentSubscriptionSettings,
+    pub(crate) revision: StreamPosition<u64>,
 }
 
 impl Default for PersistentSubscriptionOptions {
@@ -11,6 +12,7 @@ impl Default for PersistentSubscriptionOptions {
         Self {
             credentials: None,
             setts: Default::default(),
+            revision: StreamPosition::End,
         }
     }
 }
@@ -27,6 +29,11 @@ impl PersistentSubscriptionOptions {
     /// Applies the specified persistent subscription settings.
     pub fn settings(self, setts: PersistentSubscriptionSettings) -> Self {
         Self { setts, ..self }
+    }
+
+    /// Where the subscription should start from (event number).
+    pub fn revision(self, revision: StreamPosition<u64>) -> Self {
+        Self { revision, ..self }
     }
 }
 

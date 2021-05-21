@@ -70,6 +70,14 @@ mod options;
 mod private;
 mod types;
 
+pub(crate) mod google {
+    pub mod rpc {
+        pub use super::super::event_store::generated::google_rpc::*;
+    }
+}
+
+// pub(crate) use event_store::generated::client::*;
+
 pub use client::Client;
 pub use commands::{SubscriptionRead, SubscriptionWrite};
 pub use grpc::{ClientSettings, ClientSettingsParseError};

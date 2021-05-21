@@ -180,7 +180,7 @@ pub struct WriteResult {
 pub enum StreamPosition<A> {
     Start,
     End,
-    Point(A),
+    Position(A),
 }
 
 /// Enumeration detailing the possible outcomes of reading a stream.
@@ -644,6 +644,7 @@ pub struct PersistentSubscriptionSettings {
     pub resolve_link_tos: bool,
 
     /// Where the subscription should start from (event number).
+    #[deprecated]
     pub revision: u64,
 
     /// Whether or not in depth latency statistics should be tracked on this

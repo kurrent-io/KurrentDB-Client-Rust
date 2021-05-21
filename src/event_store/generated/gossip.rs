@@ -13,7 +13,7 @@ pub struct EndPoint {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct MemberInfo {
     #[prost(message, optional, tag = "1")]
-    pub instance_id: ::core::option::Option<super::shared::Uuid>,
+    pub instance_id: ::core::option::Option<super::Uuid>,
     #[prost(int64, tag = "2")]
     pub time_stamp: i64,
     #[prost(enumeration = "member_info::VNodeState", tag = "3")]
@@ -81,7 +81,7 @@ pub mod gossip_client {
         }
         pub async fn read(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::shared::Empty>,
+            request: impl tonic::IntoRequest<super::super::Empty>,
         ) -> Result<tonic::Response<super::ClusterInfo>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(

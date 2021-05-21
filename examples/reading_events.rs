@@ -38,7 +38,7 @@ pub async fn read_from_stream(client: &Client) -> Result<()> {
 
 pub async fn read_from_stream_position(client: &Client) -> Result<()> {
     // region read-from-position
-    let options = ReadStreamOptions::default().position(StreamPosition::Point(10));
+    let options = ReadStreamOptions::default().position(StreamPosition::Position(10));
     let result = client.read_stream("some-stream", &options, 20).await?;
     // endregion read-from-position
 
@@ -68,7 +68,7 @@ pub async fn read_stream_overriding_user_credentials(client: &Client) -> Result<
 
 pub async fn read_from_stream_position_check(client: &Client) -> Result<()> {
     // region checking-for-stream-presence
-    let options = ReadStreamOptions::default().position(StreamPosition::Point(10));
+    let options = ReadStreamOptions::default().position(StreamPosition::Position(10));
 
     let result = client.read_stream("some-stream", &options, All).await?;
 
@@ -131,7 +131,7 @@ pub async fn read_all_overriding_user_credentials(client: &Client) -> Result<()>
     // region read-all-overriding-user-credentials
     let options = ReadAllOptions::default()
         .authenticated(Credentials::new("admin", "changeit"))
-        .position(StreamPosition::Point(Position {
+        .position(StreamPosition::Position(Position {
             commit: 1_110,
             prepare: 1_110,
         }));

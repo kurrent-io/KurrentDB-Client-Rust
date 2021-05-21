@@ -23,7 +23,7 @@ pub async fn subscribe_to_stream(client: &Client) -> Result<()> {
     // endregion subscribe-to-stream
 
     // region subscribe-to-stream-from-position
-    let options = SubscribeToStreamOptions::default().position(StreamPosition::Point(20));
+    let options = SubscribeToStreamOptions::default().position(StreamPosition::Position(20));
 
     client.subscribe_to_stream("some-stream", &options).await?;
     // endregion subscribe-to-stream-from-position
@@ -70,7 +70,7 @@ pub async fn subscribe_to_all(client: &Client) -> Result<()> {
     // endregion subscribe-to-all
 
     // region subscribe-to-all-from-position
-    let options = SubscribeToAllOptions::default().position(StreamPosition::Point(Position {
+    let options = SubscribeToAllOptions::default().position(StreamPosition::Position(Position {
         commit: 1_056,
         prepare: 1_056,
     }));

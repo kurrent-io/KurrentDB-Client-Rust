@@ -404,13 +404,14 @@ where
             streams::append_resp::Result::WrongExpectedVersion(error) => {
                 let current = match error.current_revision_option.unwrap() {
                     streams::append_resp::wrong_expected_version::CurrentRevisionOption::CurrentRevision(rev) => CurrentRevision::Current(rev),
-                    streams::append_resp::wrong_expected_version::CurrentRevisionOption::NoStream(_) => CurrentRevision::NoStream,
+                    streams::append_resp::wrong_expected_version::CurrentRevisionOption::CurrentNoStream(_) => CurrentRevision::NoStream,
                 };
 
                 let expected = match error.expected_revision_option.unwrap() {
                     streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedRevision(rev) => ExpectedRevision::Exact(rev),
-                    streams::append_resp::wrong_expected_version::ExpectedRevisionOption::Any(_) => ExpectedRevision::Any,
-                    streams::append_resp::wrong_expected_version::ExpectedRevisionOption::StreamExists(_) => ExpectedRevision::StreamExists,
+                    streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedAny(_) => ExpectedRevision::Any,
+                    streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedStreamExists(_) => ExpectedRevision::StreamExists,
+                    streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedNoStream(_) => ExpectedRevision::NoStream,
                 };
 
                 Ok(Err(WrongExpectedVersion { current, expected }))
@@ -436,7 +437,7 @@ pub async fn read_stream<'a, S: AsRef<str>>(
     };
 
     let revision_option = match options.position {
-        StreamPosition::Point(rev) => RevisionOption::Revision(rev),
+        StreamPosition::Position(rev) => RevisionOption::Revision(rev),
         StreamPosition::Start => RevisionOption::Start(Empty {}),
         StreamPosition::End => RevisionOption::End(Empty {}),
     };
@@ -555,7 +556,7 @@ pub async fn read_all<'a>(
     };
 
     let all_option = match options.position {
-        StreamPosition::Point(pos) => {
+        StreamPosition::Position(pos) => {
             let pos = options::Position {
                 commit_position: pos.commit,
                 prepare_position: pos.prepare,
@@ -765,7 +766,7 @@ pub async fn subscribe_to_stream<'a, S: AsRef<str>>(
     let revision = match options.position {
         StreamPosition::Start => RevisionOption::Start(Empty {}),
         StreamPosition::End => RevisionOption::End(Empty {}),
-        StreamPosition::Point(revision) => RevisionOption::Revision(revision),
+        StreamPosition::Position(revision) => RevisionOption::Revision(revision),
     };
 
     let stream_identifier = Some(StreamIdentifier {
@@ -859,7 +860,7 @@ pub async fn subscribe_to_all<'a>(
 
     let revision = match options.position {
         StreamPosition::Start => AllOption::Start(Empty {}),
-        StreamPosition::Point(pos) => AllOption::Position(options::Position {
+        StreamPosition::Position(pos) => AllOption::Position(options::Position {
             prepare_position: pos.prepare,
             commit_position: pos.commit,
         }),
@@ -961,7 +962,9 @@ pub async fn create_persistent_subscription<S: AsRef<str>>(
     group: S,
     options: &PersistentSubscriptionOptions,
 ) -> crate::Result<()> {
-    use persistent::create_req::Options;
+    use persistent::create_req::{
+        options::StreamOption, stream_options::RevisionOption, Options, StreamOptions,
+    };
     use persistent::CreateReq;
 
     let settings = convert_settings_create(options.setts);
@@ -974,10 +977,28 @@ pub async fn create_persistent_subscription<S: AsRef<str>>(
         .clone()
         .or_else(|| connection.default_credentials());
 
-    let options = Options {
+    let revision_option = match options.revision {
+        StreamPosition::Start => RevisionOption::Start(Empty {}),
+        StreamPosition::End => RevisionOption::End(Empty {}),
+        StreamPosition::Position(rev) => RevisionOption::Revision(rev),
+    };
+
+    let revision_option = Some(revision_option);
+
+    let stream_option = StreamOptions {
         stream_identifier,
+        revision_option,
+    };
+
+    let stream_option = StreamOption::Stream(stream_option);
+    let stream_option = Some(stream_option);
+
+    #[allow(deprecated)]
+    let options = Options {
+        stream_identifier: None,
         group_name: group.as_ref().to_string(),
         settings: Some(settings),
+        stream_option,
     };
 
     let req = CreateReq {
@@ -1004,7 +1025,9 @@ pub async fn update_persistent_subscription<S: AsRef<str>>(
     group: S,
     options: &PersistentSubscriptionOptions,
 ) -> crate::Result<()> {
-    use persistent::update_req::Options;
+    use persistent::update_req::{
+        options::StreamOption, stream_options::RevisionOption, Options, StreamOptions,
+    };
     use persistent::UpdateReq;
 
     let settings = convert_settings_update(options.setts);
@@ -1017,10 +1040,28 @@ pub async fn update_persistent_subscription<S: AsRef<str>>(
         .clone()
         .or_else(|| connection.default_credentials());
 
-    let options = Options {
+    let revision_option = match options.revision {
+        StreamPosition::Start => RevisionOption::Start(Empty {}),
+        StreamPosition::End => RevisionOption::End(Empty {}),
+        StreamPosition::Position(rev) => RevisionOption::Revision(rev),
+    };
+
+    let revision_option = Some(revision_option);
+
+    let stream_option = StreamOptions {
         stream_identifier,
+        revision_option,
+    };
+
+    let stream_option = StreamOption::Stream(stream_option);
+    let stream_option = Some(stream_option);
+
+    #[allow(deprecated)]
+    let options = Options {
+        stream_identifier: None,
         group_name: group.as_ref().to_string(),
         settings: Some(settings),
+        stream_option,
     };
 
     let req = UpdateReq {
@@ -1047,20 +1088,24 @@ pub async fn delete_persistent_subscription<S: AsRef<str>>(
     group_name: S,
     options: &DeletePersistentSubscriptionOptions,
 ) -> crate::Result<()> {
-    use persistent::delete_req::Options;
+    use persistent::delete_req::{options::StreamOption, Options};
 
-    let stream_identifier = Some(StreamIdentifier {
+    let stream_identifier = StreamIdentifier {
         stream_name: stream_id.as_ref().to_string().into_bytes(),
-    });
+    };
 
     let credentials = options
         .credentials
         .clone()
         .or_else(|| connection.default_credentials());
 
+    let stream_option = StreamOption::StreamIdentifier(stream_identifier);
+    let stream_option = Some(stream_option);
+
+    #[allow(deprecated)]
     let options = Options {
-        stream_identifier,
         group_name: group_name.as_ref().to_string(),
+        stream_option,
     };
 
     let req = persistent::DeleteReq {
@@ -1091,7 +1136,7 @@ pub async fn connect_persistent_subscription<S: AsRef<str>>(
 ) -> crate::Result<(SubscriptionRead, SubscriptionWrite)> {
     use futures::channel::mpsc;
     use futures::sink::SinkExt;
-    use persistent::read_req::options::{self, UuidOption};
+    use persistent::read_req::options::{self, StreamOption, UuidOption};
     use persistent::read_req::{self, Options};
     use persistent::read_resp;
     use persistent::ReadReq;
@@ -1102,20 +1147,22 @@ pub async fn connect_persistent_subscription<S: AsRef<str>>(
         content: Some(options::uuid_option::Content::String(Empty {})),
     };
 
-    let stream_identifier = Some(StreamIdentifier {
+    let stream_identifier = StreamIdentifier {
         stream_name: stream_id.as_ref().to_string().into_bytes(),
-    });
+    };
 
     let credentials = options
         .credentials
         .clone()
         .or_else(|| connection.default_credentials());
 
+    let stream_option = StreamOption::StreamIdentifier(stream_identifier);
+    let stream_option = Some(stream_option);
     let options = Options {
-        stream_identifier,
         group_name: group_name.as_ref().to_string(),
         buffer_size: options.batch_size as i32,
         uuid_option: Some(uuid_option),
+        stream_option,
     };
 
     let read_req = ReadReq {

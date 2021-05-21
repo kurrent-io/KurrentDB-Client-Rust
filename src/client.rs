@@ -150,7 +150,7 @@ impl Client {
                                             let sub_event = sub_event.expect("to be defined");
                                             match sub_event {
                                                 crate::types::SubEvent::EventAppeared(event) => {
-                                                    offset = crate::types::StreamPosition::Point(event.get_original_event().revision);
+                                                    offset = crate::types::StreamPosition::Position(event.get_original_event().revision);
                                                     yield Ok(crate::types::SubEvent::EventAppeared(event));
                                                 }
 
@@ -214,7 +214,7 @@ impl Client {
                                             let sub_event = sub_event.expect("to be defined");
                                             match sub_event {
                                                 crate::types::SubEvent::EventAppeared(event) => {
-                                                    offset = crate::types::StreamPosition::Point(event.get_original_event().position);
+                                                    offset = crate::types::StreamPosition::Position(event.get_original_event().position);
                                                     yield Ok(crate::types::SubEvent::EventAppeared(event));
                                                 }
 

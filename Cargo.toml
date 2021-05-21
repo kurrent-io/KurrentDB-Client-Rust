@@ -34,6 +34,7 @@ rand = { version = "0.8", features = ["small_rng"] }
 byteorder = "1.2"
 http = "0.2"
 tonic = { version = "0.4", features = ["tls", "tls-roots"] }
+tonic-types = "0.2"
 prost = "0.7"
 prost-derive = "0.7"
 prost-types = "0.7"

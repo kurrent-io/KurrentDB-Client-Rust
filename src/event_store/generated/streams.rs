@@ -25,8 +25,7 @@ pub mod read_req {
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct StreamOptions {
             #[prost(message, optional, tag = "1")]
-            pub stream_identifier:
-                ::core::option::Option<super::super::super::shared::StreamIdentifier>,
+            pub stream_identifier: ::core::option::Option<super::super::super::StreamIdentifier>,
             #[prost(oneof = "stream_options::RevisionOption", tags = "2, 3, 4")]
             pub revision_option: ::core::option::Option<stream_options::RevisionOption>,
         }
@@ -37,9 +36,9 @@ pub mod read_req {
                 #[prost(uint64, tag = "2")]
                 Revision(u64),
                 #[prost(message, tag = "3")]
-                Start(super::super::super::super::shared::Empty),
+                Start(super::super::super::super::Empty),
                 #[prost(message, tag = "4")]
-                End(super::super::super::super::shared::Empty),
+                End(super::super::super::super::Empty),
             }
         }
         #[derive(Clone, PartialEq, ::prost::Message)]
@@ -54,9 +53,9 @@ pub mod read_req {
                 #[prost(message, tag = "1")]
                 Position(super::Position),
                 #[prost(message, tag = "2")]
-                Start(super::super::super::super::shared::Empty),
+                Start(super::super::super::super::Empty),
                 #[prost(message, tag = "3")]
-                End(super::super::super::super::shared::Empty),
+                End(super::super::super::super::Empty),
             }
         }
         #[derive(Clone, PartialEq, ::prost::Message)]
@@ -98,7 +97,7 @@ pub mod read_req {
                 #[prost(uint32, tag = "3")]
                 Max(u32),
                 #[prost(message, tag = "4")]
-                Count(super::super::super::super::shared::Empty),
+                Count(super::super::super::super::Empty),
             }
         }
         #[derive(Clone, PartialEq, ::prost::Message)]
@@ -111,9 +110,9 @@ pub mod read_req {
             #[derive(Clone, PartialEq, ::prost::Oneof)]
             pub enum Content {
                 #[prost(message, tag = "1")]
-                Structured(super::super::super::super::shared::Empty),
+                Structured(super::super::super::super::Empty),
                 #[prost(message, tag = "2")]
-                String(super::super::super::super::shared::Empty),
+                String(super::super::super::super::Empty),
             }
         }
         #[derive(
@@ -143,7 +142,7 @@ pub mod read_req {
             #[prost(message, tag = "7")]
             Filter(FilterOptions),
             #[prost(message, tag = "8")]
-            NoFilter(super::super::super::shared::Empty),
+            NoFilter(super::super::super::Empty),
         }
     }
 }
@@ -168,10 +167,9 @@ pub mod read_resp {
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct RecordedEvent {
             #[prost(message, optional, tag = "1")]
-            pub id: ::core::option::Option<super::super::super::shared::Uuid>,
+            pub id: ::core::option::Option<super::super::super::Uuid>,
             #[prost(message, optional, tag = "2")]
-            pub stream_identifier:
-                ::core::option::Option<super::super::super::shared::StreamIdentifier>,
+            pub stream_identifier: ::core::option::Option<super::super::super::StreamIdentifier>,
             #[prost(uint64, tag = "3")]
             pub stream_revision: u64,
             #[prost(uint64, tag = "4")]
@@ -193,7 +191,7 @@ pub mod read_resp {
             #[prost(uint64, tag = "3")]
             CommitPosition(u64),
             #[prost(message, tag = "4")]
-            NoPosition(super::super::super::shared::Empty),
+            NoPosition(super::super::super::Empty),
         }
     }
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -211,7 +209,7 @@ pub mod read_resp {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StreamNotFound {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::shared::StreamIdentifier>,
+        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
     }
     #[derive(Clone, PartialEq, ::prost::Oneof)]
     pub enum Content {
@@ -235,7 +233,7 @@ pub mod append_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::shared::StreamIdentifier>,
+        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -246,17 +244,17 @@ pub mod append_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::shared::Empty),
+            NoStream(super::super::super::Empty),
             #[prost(message, tag = "4")]
-            Any(super::super::super::shared::Empty),
+            Any(super::super::super::Empty),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::shared::Empty),
+            StreamExists(super::super::super::Empty),
         }
     }
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ProposedMessage {
         #[prost(message, optional, tag = "1")]
-        pub id: ::core::option::Option<super::super::shared::Uuid>,
+        pub id: ::core::option::Option<super::super::Uuid>,
         #[prost(map = "string, string", tag = "2")]
         pub metadata: ::std::collections::HashMap<
             ::prost::alloc::string::String,
@@ -303,24 +301,36 @@ pub mod append_resp {
             #[prost(uint64, tag = "1")]
             CurrentRevision(u64),
             #[prost(message, tag = "2")]
-            NoStream(super::super::super::shared::Empty),
+            NoStream(super::super::super::Empty),
         }
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum PositionOption {
             #[prost(message, tag = "3")]
             Position(super::Position),
             #[prost(message, tag = "4")]
-            NoPosition(super::super::super::shared::Empty),
+            NoPosition(super::super::super::Empty),
         }
     }
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct WrongExpectedVersion {
-        #[prost(oneof = "wrong_expected_version::CurrentRevisionOption", tags = "1, 2")]
+        #[prost(
+            oneof = "wrong_expected_version::CurrentRevisionOption2060",
+            tags = "1, 2"
+        )]
+        pub current_revision_option_20_6_0:
+            ::core::option::Option<wrong_expected_version::CurrentRevisionOption2060>,
+        #[prost(
+            oneof = "wrong_expected_version::ExpectedRevisionOption2060",
+            tags = "3, 4, 5"
+        )]
+        pub expected_revision_option_20_6_0:
+            ::core::option::Option<wrong_expected_version::ExpectedRevisionOption2060>,
+        #[prost(oneof = "wrong_expected_version::CurrentRevisionOption", tags = "6, 7")]
         pub current_revision_option:
             ::core::option::Option<wrong_expected_version::CurrentRevisionOption>,
         #[prost(
             oneof = "wrong_expected_version::ExpectedRevisionOption",
-            tags = "3, 4, 5"
+            tags = "8, 9, 10, 11"
         )]
         pub expected_revision_option:
             ::core::option::Option<wrong_expected_version::ExpectedRevisionOption>,
@@ -328,20 +338,38 @@ pub mod append_resp {
     /// Nested message and enum types in `WrongExpectedVersion`.
     pub mod wrong_expected_version {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
-        pub enum CurrentRevisionOption {
+        pub enum CurrentRevisionOption2060 {
             #[prost(uint64, tag = "1")]
-            CurrentRevision(u64),
+            CurrentRevision2060(u64),
             #[prost(message, tag = "2")]
-            NoStream(super::super::super::shared::Empty),
+            NoStream2060(super::super::super::Empty),
+        }
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum ExpectedRevisionOption2060 {
+            #[prost(uint64, tag = "3")]
+            ExpectedRevision2060(u64),
+            #[prost(message, tag = "4")]
+            Any2060(super::super::super::Empty),
+            #[prost(message, tag = "5")]
+            StreamExists2060(super::super::super::Empty),
+        }
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum CurrentRevisionOption {
+            #[prost(uint64, tag = "6")]
+            CurrentRevision(u64),
+            #[prost(message, tag = "7")]
+            CurrentNoStream(super::super::super::Empty),
         }
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum ExpectedRevisionOption {
-            #[prost(uint64, tag = "3")]
+            #[prost(uint64, tag = "8")]
             ExpectedRevision(u64),
-            #[prost(message, tag = "4")]
-            Any(super::super::super::shared::Empty),
-            #[prost(message, tag = "5")]
-            StreamExists(super::super::super::shared::Empty),
+            #[prost(message, tag = "9")]
+            ExpectedAny(super::super::super::Empty),
+            #[prost(message, tag = "10")]
+            ExpectedStreamExists(super::super::super::Empty),
+            #[prost(message, tag = "11")]
+            ExpectedNoStream(super::super::super::Empty),
         }
     }
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -350,6 +378,116 @@ pub mod append_resp {
         Success(Success),
         #[prost(message, tag = "2")]
         WrongExpectedVersion(WrongExpectedVersion),
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BatchAppendReq {
+    #[prost(message, optional, tag = "1")]
+    pub correlation_id: ::core::option::Option<super::Uuid>,
+    #[prost(message, optional, tag = "2")]
+    pub options: ::core::option::Option<batch_append_req::Options>,
+    #[prost(message, repeated, tag = "3")]
+    pub proposed_messages: ::prost::alloc::vec::Vec<batch_append_req::ProposedMessage>,
+    #[prost(bool, tag = "4")]
+    pub is_final: bool,
+}
+/// Nested message and enum types in `BatchAppendReq`.
+pub mod batch_append_req {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Options {
+        #[prost(message, optional, tag = "1")]
+        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        #[prost(message, optional, tag = "6")]
+        pub deadline: ::core::option::Option<::prost_types::Timestamp>,
+        #[prost(oneof = "options::ExpectedStreamPosition", tags = "2, 3, 4, 5")]
+        pub expected_stream_position: ::core::option::Option<options::ExpectedStreamPosition>,
+    }
+    /// Nested message and enum types in `Options`.
+    pub mod options {
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum ExpectedStreamPosition {
+            #[prost(uint64, tag = "2")]
+            StreamPosition(u64),
+            #[prost(message, tag = "3")]
+            NoStream(()),
+            #[prost(message, tag = "4")]
+            Any(()),
+            #[prost(message, tag = "5")]
+            StreamExists(()),
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct ProposedMessage {
+        #[prost(message, optional, tag = "1")]
+        pub id: ::core::option::Option<super::super::Uuid>,
+        #[prost(map = "string, string", tag = "2")]
+        pub metadata: ::std::collections::HashMap<
+            ::prost::alloc::string::String,
+            ::prost::alloc::string::String,
+        >,
+        #[prost(bytes = "vec", tag = "3")]
+        pub custom_metadata: ::prost::alloc::vec::Vec<u8>,
+        #[prost(bytes = "vec", tag = "4")]
+        pub data: ::prost::alloc::vec::Vec<u8>,
+    }
+}
+#[derive(Clone, PartialEq, ::prost::Message)]
+pub struct BatchAppendResp {
+    #[prost(message, optional, tag = "1")]
+    pub correlation_id: ::core::option::Option<super::Uuid>,
+    #[prost(message, optional, tag = "4")]
+    pub stream_identifier: ::core::option::Option<super::StreamIdentifier>,
+    #[prost(oneof = "batch_append_resp::Result", tags = "2, 3")]
+    pub result: ::core::option::Option<batch_append_resp::Result>,
+    #[prost(
+        oneof = "batch_append_resp::ExpectedStreamPosition",
+        tags = "5, 6, 7, 8"
+    )]
+    pub expected_stream_position: ::core::option::Option<batch_append_resp::ExpectedStreamPosition>,
+}
+/// Nested message and enum types in `BatchAppendResp`.
+pub mod batch_append_resp {
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct Success {
+        #[prost(oneof = "success::CurrentRevisionOption", tags = "1, 2")]
+        pub current_revision_option: ::core::option::Option<success::CurrentRevisionOption>,
+        #[prost(oneof = "success::PositionOption", tags = "3, 4")]
+        pub position_option: ::core::option::Option<success::PositionOption>,
+    }
+    /// Nested message and enum types in `Success`.
+    pub mod success {
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum CurrentRevisionOption {
+            #[prost(uint64, tag = "1")]
+            CurrentRevision(u64),
+            #[prost(message, tag = "2")]
+            NoStream(()),
+        }
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum PositionOption {
+            #[prost(message, tag = "3")]
+            Position(super::super::super::AllStreamPosition),
+            #[prost(message, tag = "4")]
+            NoPosition(()),
+        }
+    }
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum Result {
+        #[prost(message, tag = "2")]
+        Error(super::super::super::super::google::rpc::Status),
+        #[prost(message, tag = "3")]
+        Success(Success),
+    }
+    #[derive(Clone, PartialEq, ::prost::Oneof)]
+    pub enum ExpectedStreamPosition {
+        #[prost(uint64, tag = "5")]
+        StreamPosition(u64),
+        #[prost(message, tag = "6")]
+        NoStream(()),
+        #[prost(message, tag = "7")]
+        Any(()),
+        #[prost(message, tag = "8")]
+        StreamExists(()),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -362,7 +500,7 @@ pub mod delete_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::shared::StreamIdentifier>,
+        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -373,11 +511,11 @@ pub mod delete_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::shared::Empty),
+            NoStream(super::super::super::Empty),
             #[prost(message, tag = "4")]
-            Any(super::super::super::shared::Empty),
+            Any(super::super::super::Empty),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::shared::Empty),
+            StreamExists(super::super::super::Empty),
         }
     }
 }
@@ -400,7 +538,7 @@ pub mod delete_resp {
         #[prost(message, tag = "1")]
         Position(Position),
         #[prost(message, tag = "2")]
-        NoPosition(super::super::shared::Empty),
+        NoPosition(super::super::Empty),
     }
 }
 #[derive(Clone, PartialEq, ::prost::Message)]
@@ -413,7 +551,7 @@ pub mod tombstone_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::shared::StreamIdentifier>,
+        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -424,11 +562,11 @@ pub mod tombstone_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::shared::Empty),
+            NoStream(super::super::super::Empty),
             #[prost(message, tag = "4")]
-            Any(super::super::super::shared::Empty),
+            Any(super::super::super::Empty),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::shared::Empty),
+            StreamExists(super::super::super::Empty),
         }
     }
 }
@@ -451,7 +589,7 @@ pub mod tombstone_resp {
         #[prost(message, tag = "1")]
         Position(Position),
         #[prost(message, tag = "2")]
-        NoPosition(super::super::shared::Empty),
+        NoPosition(super::super::Empty),
     }
 }
 #[doc = r" Generated client implementations."]
@@ -552,6 +690,25 @@ pub mod streams_client {
                 "/event_store.client.streams.Streams/Tombstone",
             );
             self.inner.unary(request.into_request(), path, codec).await
+        }
+        pub async fn batch_append(
+            &mut self,
+            request: impl tonic::IntoStreamingRequest<Message = super::BatchAppendReq>,
+        ) -> Result<tonic::Response<tonic::codec::Streaming<super::BatchAppendResp>>, tonic::Status>
+        {
+            self.inner.ready().await.map_err(|e| {
+                tonic::Status::new(
+                    tonic::Code::Unknown,
+                    format!("Service was not ready: {}", e.into()),
+                )
+            })?;
+            let codec = tonic::codec::ProstCodec::default();
+            let path = http::uri::PathAndQuery::from_static(
+                "/event_store.client.streams.Streams/BatchAppend",
+            );
+            self.inner
+                .streaming(request.into_streaming_request(), path, codec)
+                .await
         }
     }
     impl<T: Clone> Clone for StreamsClient<T> {

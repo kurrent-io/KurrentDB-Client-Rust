@@ -60,7 +60,7 @@ impl ReadAllOptions {
                 ..self
             },
 
-            StreamPosition::Point(_) => Self { position, ..self },
+            StreamPosition::Position(_) => Self { position, ..self },
         }
     }
 
