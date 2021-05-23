@@ -442,13 +442,18 @@ where
 
 pub async fn batch_append<'a, Events, S: AsRef<str>>(
     connection: &GrpcClient,
+    credentials: Option<&crate::types::Credentials>,
     mut events: Events,
-) -> crate::Result<BoxStream<'a, crate::Result<ResolvedEvent>>>
+) -> crate::Result<BoxStream<'a, crate::Result<crate::types::BatchResp>>>
 where
     Events: Stream<Item = crate::types::Batch> + Send + Sync + Unpin + 'static,
 {
     use streams::{
         batch_append_req::{options::ExpectedStreamPosition, Options, ProposedMessage},
+        batch_append_resp::{
+            self,
+            success::{CurrentRevisionOption, PositionOption},
+        },
         BatchAppendReq,
     };
 
@@ -486,7 +491,75 @@ where
         };
     };
 
-    todo!()
+    let credentials = credentials
+        .cloned()
+        .or_else(|| connection.default_credentials());
+
+    let mut resp_stream = connection
+        .execute(move |handle| async move {
+            let mut req = Request::new(stream);
+            configure_auth_req(&mut req, credentials);
+            let mut client = StreamsClient::new(handle.channel.clone());
+
+            let resp = client.batch_append(req).await?;
+
+            Ok(resp.into_inner())
+        })
+        .await?;
+
+    let resp_stream = resp_stream
+        .map_err(crate::types::Error::from_grpc)
+        .map_ok(|resp| {
+            let stream_name = String::from_utf8(resp.stream_identifier.unwrap().stream_name)
+                .expect("valid UTF-8 string");
+
+            let correlation_id = raw_uuid_to_uuid(resp.correlation_id.unwrap());
+
+            let result = match resp.result.unwrap() {
+                batch_append_resp::Result::Success(success) => {
+                    let result = crate::types::BatchWriteResult {
+                        current_revision: match success.current_revision_option.unwrap() {
+                            CurrentRevisionOption::CurrentRevision(rev) => Some(rev),
+                            CurrentRevisionOption::NoStream(()) => None,
+                        },
+                        position: match success.position_option.unwrap() {
+                            PositionOption::Position(pos) => Some(Position {
+                                commit: pos.commit_position,
+                                prepare: pos.prepare_position,
+                            }),
+                            PositionOption::NoPosition(_) => None,
+                        },
+                    };
+
+                    Ok(result)
+                }
+                batch_append_resp::Result::Error(code) => Err(code),
+            };
+
+            let expected_version = match resp.expected_stream_position.unwrap() {
+                batch_append_resp::ExpectedStreamPosition::Any(_) => {
+                    crate::types::ExpectedRevision::Any
+                }
+                batch_append_resp::ExpectedStreamPosition::NoStream(_) => {
+                    crate::types::ExpectedRevision::NoStream
+                }
+                batch_append_resp::ExpectedStreamPosition::StreamExists(_) => {
+                    crate::types::ExpectedRevision::StreamExists
+                }
+                batch_append_resp::ExpectedStreamPosition::StreamPosition(rev) => {
+                    crate::types::ExpectedRevision::Exact(rev)
+                }
+            };
+
+            crate::types::BatchResp {
+                stream_name,
+                correlation_id,
+                result,
+                expected_version,
+            }
+        });
+
+    Ok(resp_stream.boxed())
 }
 
 /// Sends asynchronously the read command to the server.

@@ -331,7 +331,7 @@ pub enum ReadStreamStatus<A> {
 }
 
 /// Holds data of event about to be sent to the server.
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct EventData {
     pub(crate) payload: Bytes,
     pub(crate) id_opt: Option<Uuid>,
@@ -1056,10 +1056,25 @@ impl SubscriptionFilter {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Batch {
     pub correlation_id: Uuid,
     pub stream_name: String,
     pub expected_version: ExpectedRevision,
     pub events: Vec<EventData>,
     pub is_final: bool,
+}
+
+#[derive(Debug, Clone)]
+pub struct BatchResp {
+    pub correlation_id: Uuid,
+    pub stream_name: String,
+    pub result: std::result::Result<BatchWriteResult, crate::google::rpc::Status>,
+    pub expected_version: ExpectedRevision,
+}
+
+#[derive(Debug, Clone)]
+pub struct BatchWriteResult {
+    pub current_revision: Option<u64>,
+    pub position: Option<Position>,
 }
