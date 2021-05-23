@@ -10,7 +10,7 @@ use crate::{
     SubscriptionWrite, ToCount, WriteResult, WrongExpectedVersion,
 };
 use futures::stream::BoxStream;
-use futures::TryStreamExt;
+use futures::{Stream, TryStreamExt};
 
 /// Represents a client to a single node. `Client` maintains a full duplex
 /// communication to EventStoreDB.
@@ -42,6 +42,17 @@ impl Client {
         Events: ToEvents + 'static,
     {
         commands::append_to_stream(&self.client, stream_name, options, events.into_events()).await
+    }
+
+    pub async fn batch_append<'a, Batches>(
+        &self,
+        credentials: Option<&crate::types::Credentials>,
+        batches: Batches,
+    ) -> crate::Result<BoxStream<'a, crate::Result<crate::types::BatchResp>>>
+    where
+        Batches: Stream<Item = crate::types::Batch> + Send + Sync + Unpin + 'static,
+    {
+        commands::batch_append(&self.client, credentials, batches).await
     }
 
     /// Reads events from a given stream. The reading can be done forward and

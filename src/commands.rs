@@ -440,7 +440,7 @@ where
     }).await
 }
 
-pub async fn batch_append<'a, Events, S: AsRef<str>>(
+pub async fn batch_append<'a, Events>(
     connection: &GrpcClient,
     credentials: Option<&crate::types::Credentials>,
     mut events: Events,
