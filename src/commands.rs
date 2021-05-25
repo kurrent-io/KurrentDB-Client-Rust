@@ -446,7 +446,7 @@ pub async fn batch_append<'a, Events>(
     mut events: Events,
 ) -> crate::Result<BoxStream<'a, crate::Result<crate::types::BatchResp>>>
 where
-    Events: Stream<Item = crate::types::Batch> + Send + Sync + Unpin + 'static,
+    Events: Stream<Item = crate::types::Batch> + Send + Sync + 'static,
 {
     use streams::{
         batch_append_req::{options::ExpectedStreamPosition, Options, ProposedMessage},
@@ -457,39 +457,43 @@ where
         BatchAppendReq,
     };
 
-    let stream = async_stream::stream! {
-        while let Some(batch) = events.next().await {
-            let correlation_id = shared::uuid::Value::String(batch.correlation_id.to_string());
-            let correlation_id = Some(Uuid { value: Some(correlation_id) });
-            let stream_identifier = Some(StreamIdentifier {
-                stream_name: batch.stream_name.into_bytes(),
-            });
+    let stream = events.map(|batch| {
+        let correlation_id = shared::uuid::Value::String(batch.correlation_id.to_string());
+        let correlation_id = Some(Uuid {
+            value: Some(correlation_id),
+        });
+        let stream_identifier = Some(StreamIdentifier {
+            stream_name: batch.stream_name.into_bytes(),
+        });
 
-            let expected_stream_position = match batch.expected_version {
-                ExpectedRevision::Exact(rev) => ExpectedStreamPosition::StreamPosition(rev),
-                ExpectedRevision::NoStream => ExpectedStreamPosition::NoStream(()),
-                ExpectedRevision::StreamExists => ExpectedStreamPosition::StreamExists(()),
-                ExpectedRevision::Any => ExpectedStreamPosition::Any(()),
-            };
-
-            let proposed_messages: Vec<ProposedMessage> = batch.events.into_iter().map(convert_event_data_to_batch_proposed_message).collect();
-
-            let expected_stream_position = Some(expected_stream_position);
-
-            let options = Some(Options {
-                stream_identifier,
-                deadline: None,
-                expected_stream_position,
-            });
-
-            yield (BatchAppendReq {
-                correlation_id,
-                options,
-                proposed_messages,
-                is_final: batch.is_final,
-            });
+        let expected_stream_position = match batch.expected_version {
+            ExpectedRevision::Exact(rev) => ExpectedStreamPosition::StreamPosition(rev),
+            ExpectedRevision::NoStream => ExpectedStreamPosition::NoStream(()),
+            ExpectedRevision::StreamExists => ExpectedStreamPosition::StreamExists(()),
+            ExpectedRevision::Any => ExpectedStreamPosition::Any(()),
         };
-    };
+
+        let proposed_messages: Vec<ProposedMessage> = batch
+            .events
+            .into_iter()
+            .map(convert_event_data_to_batch_proposed_message)
+            .collect();
+
+        let expected_stream_position = Some(expected_stream_position);
+
+        let options = Some(Options {
+            stream_identifier,
+            deadline: None,
+            expected_stream_position,
+        });
+
+        BatchAppendReq {
+            correlation_id,
+            options,
+            proposed_messages,
+            is_final: batch.is_final,
+        }
+    });
 
     let credentials = credentials
         .cloned()

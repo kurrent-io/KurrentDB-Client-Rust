@@ -50,7 +50,7 @@ impl Client {
         batches: Batches,
     ) -> crate::Result<BoxStream<'a, crate::Result<crate::types::BatchResp>>>
     where
-        Batches: Stream<Item = crate::types::Batch> + Send + Sync + Unpin + 'static,
+        Batches: Stream<Item = crate::types::Batch> + Send + Sync + 'static,
     {
         commands::batch_append(&self.client, credentials, batches).await
     }

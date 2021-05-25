@@ -6,13 +6,15 @@ extern crate serde_json;
 mod images;
 
 use eventstore::{
-    Client, ClientSettings, EventData, PersistentSubscriptionOptions,
+    Batch, Client, ClientSettings, EventData, ExpectedRevision, PersistentSubscriptionOptions,
     PersistentSubscriptionSettings, Single,
 };
 use futures::channel::oneshot;
 use futures::stream::TryStreamExt;
+use futures::{Stream, StreamExt};
 use std::collections::HashMap;
 use std::error::Error;
+use std::pin::Pin;
 use testcontainers::clients::Cli;
 use testcontainers::{Docker, RunArgs};
 
@@ -339,6 +341,55 @@ async fn single_node() -> Result<(), Box<dyn std::error::Error>> {
     let client = Client::create(settings).await?;
 
     all_around_tests(client).await?;
+
+    Ok(())
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn test_batch_append() -> Result<(), Box<dyn std::error::Error>> {
+    let _ = pretty_env_logger::try_init();
+
+    let settings = format!("esdb://localhost:{}?tls=false", 2_113,).parse::<ClientSettings>()?;
+
+    let client = Client::create(settings).await?;
+    let mut batches = Vec::new();
+
+    let events = generate_events("batch-foo".to_string(), 10);
+    batches.push(Batch {
+        correlation_id: uuid::Uuid::new_v4(),
+        stream_name: "foo".to_string(),
+        expected_version: ExpectedRevision::Any,
+        events,
+        is_final: false,
+    });
+
+    let events = generate_events("batch-bar".to_string(), 10);
+    batches.push(Batch {
+        correlation_id: uuid::Uuid::new_v4(),
+        stream_name: "bar".to_string(),
+        expected_version: ExpectedRevision::Any,
+        events,
+        is_final: false,
+    });
+
+    let events = generate_events("batch-baz".to_string(), 10);
+    batches.push(Batch {
+        correlation_id: uuid::Uuid::new_v4(),
+        stream_name: "baz".to_string(),
+        expected_version: ExpectedRevision::Any,
+        events,
+        is_final: true,
+    });
+
+    let mut output = client
+        .batch_append(None, futures::stream::iter(batches))
+        .await?;
+
+    println!("Passed: {:?}", output.next().await);
+
+    while let Some(resp) = output.try_next().await? {
+        println!("batch resp: {:?}", resp);
+    }
 
     Ok(())
 }
