@@ -1118,6 +1118,8 @@ pub async fn create_persistent_subscription<S: AsRef<str>>(
         stream_name: stream.as_ref().to_string().into_bytes(),
     });
 
+    let deprecated_stream_identifier = stream_identifier.clone();
+
     let credentials = options
         .credentials
         .clone()
@@ -1141,7 +1143,7 @@ pub async fn create_persistent_subscription<S: AsRef<str>>(
 
     #[allow(deprecated)]
     let options = Options {
-        stream_identifier: None,
+        stream_identifier: deprecated_stream_identifier,
         group_name: group.as_ref().to_string(),
         settings: Some(settings),
         stream_option,
@@ -1181,6 +1183,8 @@ pub async fn update_persistent_subscription<S: AsRef<str>>(
         stream_name: stream.as_ref().to_string().into_bytes(),
     });
 
+    let deprecated_stream_identifier = stream_identifier.clone();
+
     let credentials = options
         .credentials
         .clone()
@@ -1204,7 +1208,7 @@ pub async fn update_persistent_subscription<S: AsRef<str>>(
 
     #[allow(deprecated)]
     let options = Options {
-        stream_identifier: None,
+        stream_identifier: deprecated_stream_identifier,
         group_name: group.as_ref().to_string(),
         settings: Some(settings),
         stream_option,

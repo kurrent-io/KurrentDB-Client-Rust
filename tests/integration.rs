@@ -230,17 +230,23 @@ async fn test_persistent_subscription(client: &Client) -> Result<(), Box<dyn Err
     let stream_id = fresh_stream_id("persistent_subscription");
     let events = generate_events("es6-persistent-subscription-test".to_string(), 5);
 
+    debug!(">>> before creating sub");
     client
         .create_persistent_subscription(stream_id.as_str(), "a_group_name", &Default::default())
         .await?;
+    debug!(">>> after creating sub");
 
+    debug!(">>> before appending sub");
     let _ = client
         .append_to_stream(stream_id.as_str(), &Default::default(), events)
         .await?;
+    debug!(">>> after appending sub");
 
+    debug!(">>> before connect sub");
     let (mut read, mut write) = client
         .connect_persistent_subscription(stream_id.as_str(), "a_group_name", &Default::default())
         .await?;
+    debug!(">>> after connect sub");
 
     let max = 10usize;
 
@@ -334,7 +340,7 @@ async fn single_node() -> Result<(), Box<dyn std::error::Error>> {
 
     let settings = format!(
         "esdb://localhost:{}?tls=false",
-        container.get_host_port(2_113).unwrap()
+        2_113 // container.get_host_port(2_113).unwrap()
     )
     .parse::<ClientSettings>()?;
 
@@ -360,7 +366,7 @@ async fn test_batch_append() -> Result<(), Box<dyn std::error::Error>> {
         stream_name: "foo".to_string(),
         expected_version: ExpectedRevision::Any,
         events,
-        is_final: false,
+        is_final: true,
     });
 
     let events = generate_events("batch-bar".to_string(), 10);
@@ -369,7 +375,7 @@ async fn test_batch_append() -> Result<(), Box<dyn std::error::Error>> {
         stream_name: "bar".to_string(),
         expected_version: ExpectedRevision::Any,
         events,
-        is_final: false,
+        is_final: true,
     });
 
     let events = generate_events("batch-baz".to_string(), 10);
