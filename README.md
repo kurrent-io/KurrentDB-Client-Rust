@@ -32,7 +32,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Creates a client settings for a single node configuration.
     let settings = "esdb://admin:changeit@localhost:2113".parse()?;
-    let client = Client::new(settings).await?;
+    let client = Client::create(settings).await?;
 
     let payload = Foo {
         is_rust_a_nice_language: true,
