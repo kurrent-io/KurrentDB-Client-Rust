@@ -1251,22 +1251,7 @@ impl NodePreference {
     }
 }
 
-#[derive(Debug)]
-pub(crate) enum Either<A, B> {
-    Left(A),
-    Right(B),
-}
-
-impl<A, B> Either<A, B> {
-    pub(crate) fn as_ref(&self) -> Either<&A, &B> {
-        match self {
-            Either::Left(a) => Either::Left(a),
-            Either::Right(b) => Either::Right(b),
-        }
-    }
-}
-
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub(crate) struct DnsClusterSettings {
     pub(crate) endpoint: Endpoint,
 }

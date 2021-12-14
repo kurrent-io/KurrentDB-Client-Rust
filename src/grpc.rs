@@ -1,6 +1,6 @@
 use crate::gossip::{Gossip, MemberInfo, VNodeState};
 use crate::types::{Endpoint, GrpcConnectionError};
-use crate::{Credentials, DnsClusterSettings, Either, NodePreference};
+use crate::{Credentials, DnsClusterSettings, NodePreference};
 use futures::channel::mpsc::UnboundedSender;
 use futures::channel::oneshot;
 use futures::stream::StreamExt;
@@ -630,201 +630,220 @@ pub(crate) mod defaults {
     pub const KEEP_ALIVE_TIMEOUT_IN_MS: u64 = 10_000;
 }
 
-fn cluster_mode(conn_setts: ClientSettings) -> UnboundedSender<Msg> {
-    let (sender, mut consumer) = futures::channel::mpsc::unbounded::<Msg>();
-    let kind = if conn_setts.dns_discover {
-        let endpoint = conn_setts.hosts.as_slice()[0].clone();
-        let dns_settings = DnsClusterSettings { endpoint };
+struct NodeConnection {
+    id: Uuid,
+    handle: Option<HandleInfo>,
+    settings: ClientSettings,
+    cluster_mode: Option<ClusterMode>,
+    rng: SmallRng,
+    previous_candidates: Option<Vec<Member>>,
+    tls_setts: Option<tonic::transport::ClientTlsConfig>,
+}
 
-        Either::Right(dns_settings)
-    } else {
-        Either::Left(conn_setts.hosts.clone())
-    };
+#[derive(Clone)]
+enum ClusterMode {
+    Dns(DnsClusterSettings),
+    Seeds(Vec<Endpoint>),
+}
 
-    let dup_sender = sender.clone();
+struct NodeRequest {
+    correlation: Uuid,
+    endpoint: Endpoint,
+}
 
-    tokio::spawn(async move {
-        let mut channel_id = Uuid::new_v4();
-        let mut handle_opt: Option<Handle> = None;
-        let mut failed_endpoint: Option<Endpoint> = None;
-        let mut previous_candidates: Option<Vec<Member>> = None;
-        let mut work_queue = Vec::new();
-        let mut rng = SmallRng::from_entropy();
-        let mut discovery_att_count = 0usize;
+#[derive(Clone)]
+pub(crate) struct HandleInfo {
+    id: Uuid,
+    pub(crate) channel: Channel,
+    pub(crate) endpoint: Endpoint,
+    pub(crate) secure: bool,
+}
 
-        while let Some(item) = consumer.next().await {
-            work_queue.push(item);
+impl NodeConnection {
+    fn new(settings: ClientSettings) -> Self {
+        let cluster_mode = if settings.dns_discover || settings.hosts().len() > 1 {
+            let mode = if settings.dns_discover {
+                let endpoint = settings.hosts()[0].clone();
+                ClusterMode::Dns(DnsClusterSettings { endpoint })
+            } else {
+                ClusterMode::Seeds(settings.hosts().clone())
+            };
 
-            while let Some(msg) = work_queue.pop() {
-                debug!("Current msg: {:?}, rest: [{:?}]", msg, work_queue);
-                match msg {
-                    Msg::GetChannel(resp) => {
-                        if let Some(handle) = handle_opt.as_ref() {
-                            let _ = resp.send(Ok(handle.clone()));
-                        } else if discovery_att_count >= conn_setts.max_discover_attempts() {
-                            let _ =
-                                resp.send(Err(GrpcConnectionError::MaxDiscoveryAttemptReached(
-                                    conn_setts.max_discover_attempts(),
-                                )));
+            Some(mode)
+        } else {
+            None
+        };
 
-                            // FIXME - When we reached the max discovery attempt we should close
-                            // the entire connection!
-                            discovery_att_count = 0;
-                        } else {
-                            // It means we need to create a new channel.
-                            work_queue.push(Msg::GetChannel(resp));
-                            work_queue.push(Msg::CreateChannel(channel_id, None));
-                        }
+        let tls_setts = if !settings.tls_verify_cert && settings.secure {
+            let mut rustls_config = rustls::ClientConfig::new();
+            let protocols = vec![(b"h2".to_vec())];
+
+            rustls_config.set_protocols(protocols.as_slice());
+
+            rustls_config
+                .dangerous()
+                .set_certificate_verifier(std::sync::Arc::new(NoVerification));
+
+            Some(tonic::transport::ClientTlsConfig::new().rustls_client_config(rustls_config))
+        } else if settings.secure {
+            Some(tonic::transport::ClientTlsConfig::new())
+        } else {
+            None
+        };
+
+        Self {
+            id: Uuid::nil(),
+            handle: None,
+            settings,
+            cluster_mode,
+            rng: SmallRng::from_entropy(),
+            previous_candidates: None,
+            tls_setts,
+        }
+    }
+
+    async fn next(
+        &mut self,
+        mut request: Option<NodeRequest>,
+    ) -> Result<HandleInfo, GrpcConnectionError> {
+        let mut selected_node = None;
+        let mut failed_endpoint = None;
+
+        loop {
+            if let Some(request) = request.take() {
+                if self.id != request.correlation {
+                    if let Some(handle) = self.handle.clone() {
+                        return Ok(handle);
                     }
+                }
 
-                    Msg::CreateChannel(id, seed_opt) => {
-                        if channel_id != id {
-                            continue;
+                failed_endpoint = self.handle.take().map(|h| h.endpoint);
+                selected_node = Some(request.endpoint);
+
+                continue;
+            } else if let Some(handle) = self.handle.clone() {
+                return Ok(handle);
+            }
+
+            let mut attempts = 1usize;
+            loop {
+                if let Some(selected_node) = selected_node.take() {
+                    match new_channel(&self.settings, self.tls_setts.clone(), &selected_node).await
+                    {
+                        Ok(channel) => {
+                            self.id = Uuid::new_v4();
+                            let handle = HandleInfo {
+                                id: self.id,
+                                endpoint: selected_node,
+                                secure: self.settings.secure,
+                                channel,
+                            };
+
+                            self.handle = Some(handle.clone());
+
+                            return Ok(handle);
                         }
 
-                        let node = if let Some(ref seed) = seed_opt {
-                            Some(seed.clone())
-                        } else {
-                            node_selection(
-                                &conn_setts,
-                                &kind,
-                                &failed_endpoint,
-                                &mut rng,
-                                &mut previous_candidates,
-                            )
-                            .await
-                        };
-
-                        if let Some(node) = node {
-                            match create_channel(&conn_setts, &node).await {
-                                Ok(channel) => {
-                                    failed_endpoint = Some(node.clone());
-                                    channel_id = Uuid::new_v4();
-                                    handle_opt = Some(Handle {
-                                        id: channel_id,
-                                        endpoint: node,
-                                        secure: conn_setts.secure,
-                                        sender: sender.clone(),
-                                        channel,
-                                    });
-                                    discovery_att_count = 0;
-
-                                    continue;
-                                }
-
-                                Err(err) => {
-                                    error!(
-                                        "Error when creating a gRPC channel for selected node {:?}: {}",
-                                        node, err
-                                    );
-                                }
-                            }
-                        } else {
-                            warn!(
-                                "Unable to select a node. Retrying...({}/{})",
-                                discovery_att_count,
-                                conn_setts.max_discover_attempts()
+                        Err(err) => {
+                            error!(
+                                "Error when creating a gRPC channel for selected node {:?}: {}",
+                                selected_node, err
                             );
                         }
-
-                        if discovery_att_count < conn_setts.max_discover_attempts() {
-                            tokio::time::sleep(conn_setts.discovery_interval).await;
-                            discovery_att_count += 1;
-                            work_queue.push(Msg::CreateChannel(id, seed_opt));
-                            continue;
-                        }
-
-                        error!(
-                            "Maximum discovery attempt count reached: {0}",
-                            conn_setts.max_discover_attempts()
-                        );
                     }
+                } else if let Some(mode) = self.cluster_mode.as_ref() {
+                    let node = node_selection(
+                        &self.settings,
+                        mode,
+                        &self.tls_setts,
+                        &failed_endpoint,
+                        &mut self.rng,
+                        &mut self.previous_candidates,
+                    )
+                    .await;
+
+                    if node.is_some() {
+                        selected_node = node;
+                        continue;
+                    }
+                } else {
+                    selected_node = self.settings.hosts().first().cloned();
                 }
+
+                attempts += 1;
+
+                if attempts <= self.settings.max_discover_attempts() {
+                    tokio::time::sleep(self.settings.discovery_interval()).await;
+                    continue;
+                }
+
+                return Err(GrpcConnectionError::MaxDiscoveryAttemptReached(
+                    self.settings.max_discover_attempts(),
+                ));
             }
         }
-    });
-
-    dup_sender
+    }
 }
 
-fn single_node_mode(conn_setts: ClientSettings, endpoint: Endpoint) -> UnboundedSender<Msg> {
+fn connection_state_machine(settings: ClientSettings) -> UnboundedSender<Msg> {
     let (sender, mut consumer) = futures::channel::mpsc::unbounded::<Msg>();
     let dup_sender = sender.clone();
 
     tokio::spawn(async move {
-        let mut channel_id = Uuid::new_v4();
+        let mut connection = NodeConnection::new(settings);
         let mut handle_opt: Option<Handle> = None;
-        let mut work_queue = Vec::new();
-        let mut discovery_att_count = 0usize;
 
-        while let Some(item) = consumer.next().await {
-            work_queue.push(item);
-
-            while let Some(msg) = work_queue.pop() {
-                debug!(">>> {:?}", msg);
-
-                match msg {
-                    Msg::GetChannel(resp) => {
-                        if let Some(handle) = handle_opt.as_ref() {
-                            let _ = resp.send(Ok(handle.clone()));
-                        } else if discovery_att_count >= conn_setts.max_discover_attempts() {
-                            let _ =
-                                resp.send(Err(GrpcConnectionError::MaxDiscoveryAttemptReached(
-                                    conn_setts.max_discover_attempts(),
-                                )));
-
-                            discovery_att_count = 0;
-                        } else {
-                            // It means we need to create a new channel.
-                            work_queue.push(Msg::GetChannel(resp));
-                            work_queue.push(Msg::CreateChannel(channel_id, None));
-                        }
+        while let Some(msg) = consumer.next().await {
+            match msg {
+                Msg::GetChannel(resp) => {
+                    if let Some(handle) = handle_opt.as_ref() {
+                        let _ = resp.send(Ok(handle.clone()));
+                        continue;
                     }
 
-                    Msg::CreateChannel(id, seed_opt) => {
-                        if channel_id != id {
-                            continue;
+                    match connection.next(None).await {
+                        Err(e) => {
+                            error!("gRPC connection error: {}", e);
+
+                            let _ = resp.send(Err(e));
+                            break;
                         }
+                        Ok(info) => {
+                            let handle = Handle {
+                                id: info.id,
+                                channel: info.channel,
+                                endpoint: info.endpoint,
+                                secure: info.secure,
+                                sender: sender.clone(),
+                            };
 
-                        let node = if let Some(ref seed) = seed_opt {
-                            seed.clone()
-                        } else {
-                            endpoint.clone()
-                        };
+                            handle_opt = Some(handle.clone());
 
-                        match create_channel(&conn_setts, &node).await {
-                            Ok(channel) => {
-                                channel_id = Uuid::new_v4();
-                                handle_opt = Some(Handle {
-                                    id: channel_id,
-                                    endpoint: node.clone(),
-                                    sender: sender.clone(),
-                                    secure: conn_setts.secure,
-                                    channel,
-                                });
-                            }
+                            let _ = resp.send(Ok(handle));
+                        }
+                    }
+                }
+                Msg::CreateChannel(id, seed_opt) => {
+                    let request = seed_opt.map(|endpoint| NodeRequest {
+                        correlation: id,
+                        endpoint,
+                    });
 
-                            Err(err) => {
-                                error!(
-                                    "Error when connecting to {}: {}. Retrying...({}/{})",
-                                    conn_setts.to_uri(&endpoint),
-                                    err,
-                                    discovery_att_count,
-                                    conn_setts.max_discover_attempts()
-                                );
+                    match connection.next(request).await {
+                        Err(e) => {
+                            error!("gRPC connection error: {}", e);
+                            break;
+                        }
+                        Ok(info) => {
+                            let handle = Handle {
+                                id: info.id,
+                                channel: info.channel,
+                                endpoint: info.endpoint,
+                                secure: info.secure,
+                                sender: sender.clone(),
+                            };
 
-                                if discovery_att_count < conn_setts.max_discover_attempts() {
-                                    tokio::time::sleep(conn_setts.discovery_interval).await;
-                                    work_queue.push(Msg::CreateChannel(id, seed_opt));
-                                    discovery_att_count += 1;
-                                    continue;
-                                }
-
-                                error!(
-                                    "Maximum discovery attempt count reached: {0}",
-                                    conn_setts.max_discover_attempts()
-                                );
-                            }
+                            handle_opt = Some(handle);
                         }
                     }
                 }
@@ -835,8 +854,9 @@ fn single_node_mode(conn_setts: ClientSettings, endpoint: Endpoint) -> Unbounded
     dup_sender
 }
 
-async fn create_channel(
+async fn new_channel(
     setts: &ClientSettings,
+    tls_config: Option<tonic::transport::ClientTlsConfig>,
     endpoint: &Endpoint,
 ) -> Result<Channel, tonic::transport::Error> {
     let uri = setts.to_uri(endpoint);
@@ -845,22 +865,8 @@ async fn create_channel(
 
     let mut channel = Channel::builder(uri.clone());
 
-    if !setts.tls_verify_cert && setts.secure {
-        let mut rustls_config = rustls::ClientConfig::new();
-        let protocols = vec![(b"h2".to_vec())];
-
-        rustls_config.set_protocols(protocols.as_slice());
-
-        rustls_config
-            .dangerous()
-            .set_certificate_verifier(std::sync::Arc::new(NoVerification));
-
-        let client_config =
-            tonic::transport::ClientTlsConfig::new().rustls_client_config(rustls_config);
-
-        channel = channel.tls_config(client_config)?;
-    } else if setts.secure {
-        channel = channel.tls_config(tonic::transport::ClientTlsConfig::new())?;
+    if let Some(config) = tls_config {
+        channel = channel.tls_config(config)?;
     }
 
     let channel = channel
@@ -932,17 +938,7 @@ pub struct GrpcClient {
 impl GrpcClient {
     pub fn create(conn_setts: ClientSettings) -> Self {
         let default_credentials = conn_setts.default_user_name.clone();
-        let sender = if conn_setts.dns_discover || conn_setts.hosts.len() > 1 {
-            cluster_mode(conn_setts)
-        } else {
-            let endpoint = conn_setts
-                .hosts
-                .first()
-                .expect("Impossible: hosts can't be empty")
-                .clone();
-
-            single_node_mode(conn_setts, endpoint)
-        };
+        let sender = connection_state_machine(conn_setts);
 
         GrpcClient {
             sender,
@@ -1044,7 +1040,8 @@ struct Member {
 
 async fn node_selection(
     conn_setts: &ClientSettings,
-    kind: &Either<Vec<Endpoint>, DnsClusterSettings>,
+    mode: &ClusterMode,
+    tls_config: &Option<tonic::transport::ClientTlsConfig>,
     failed_endpoint: &Option<Endpoint>,
     rng: &mut SmallRng,
     previous_candidates: &mut Option<Vec<Member>>,
@@ -1063,9 +1060,9 @@ async fn node_selection(
         }
 
         None => {
-            let mut seeds = match kind.as_ref() {
-                Either::Left(seeds) => seeds.clone(),
-                Either::Right(dns) => vec![dns.endpoint.clone()],
+            let mut seeds = match mode {
+                ClusterMode::Seeds(ref seeds) => seeds.clone(),
+                ClusterMode::Dns(ref dns) => vec![dns.endpoint.clone()],
             };
 
             seeds.shuffle(rng);
@@ -1076,7 +1073,7 @@ async fn node_selection(
     debug!("List of candidates: {:?}", candidates);
 
     for candidate in candidates {
-        match create_channel(conn_setts, &candidate).await {
+        match new_channel(conn_setts, tls_config.clone(), &candidate).await {
             Ok(channel) => {
                 let gossip_client = Gossip::create(channel.clone());
 

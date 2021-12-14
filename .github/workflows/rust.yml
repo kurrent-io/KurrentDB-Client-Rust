@@ -50,10 +50,12 @@ jobs:
           RUST_LOG: integration=debug,eventstore=debug
           RUST_BACKTRACE: 1
 
+      - name: Set up EventStoreDB ${{ matrix.version }} cluster with Docker Compose
+        run: docker-compose up -d
+
       - name: Test on three-cluster-node EventStoreDB ${{ matrix.version }}
         run: |
-          docker-compose up -d
-          cargo test --package eventstore --test integration cluster
+          cargo test --package eventstore --test integration -- cluster
           docker-compose down
         env:
           CONTAINER_IMAGE_VERSION: ${{ matrix.version }}-buster-slim
