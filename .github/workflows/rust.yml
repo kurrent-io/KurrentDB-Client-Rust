@@ -33,7 +33,7 @@ jobs:
     needs: build
     strategy:
       matrix:
-        version: [ 21.6.0, 20.10.5 ]
+        version: [ 21.10.1, 20.10.5 ]
 
     runs-on: ubuntu-18.04
 
