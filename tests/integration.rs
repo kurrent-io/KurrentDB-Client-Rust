@@ -6,8 +6,9 @@ extern crate serde_json;
 mod images;
 
 use eventstore::{
-    Acl, Client, ClientSettings, EventData, ProjectionClient, StreamAclBuilder,
-    StreamMetadataBuilder, StreamMetadataResult,
+    Acl, Client, ClientSettings, EventData, PersistentSubscriptionOptions,
+    PersistentSubscriptionToAllOptions, ProjectionClient, StreamAclBuilder, StreamMetadataBuilder,
+    StreamMetadataResult,
 };
 use futures::channel::oneshot;
 use std::collections::HashMap;
@@ -263,10 +264,8 @@ async fn test_subscription(client: &Client) -> Result<(), Box<dyn Error>> {
 async fn test_create_persistent_subscription(client: &Client) -> Result<(), Box<dyn Error>> {
     let stream_id = fresh_stream_id("create_persistent_sub");
 
-    let options =
-        eventstore::PersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
     client
-        .create_persistent_subscription(stream_id, "a_group_name", &options)
+        .create_persistent_subscription(stream_id, "a_group_name", &Default::default())
         .await?;
 
     Ok(())
@@ -277,11 +276,9 @@ async fn test_create_persistent_subscription_to_all(
     names: &mut names::Generator<'_>,
 ) -> eventstore::Result<()> {
     let group_name = names.next().unwrap();
-    let options =
-        eventstore::PersistentSubscriptionToAllOptions::default().deadline(Duration::from_secs(2));
 
     client
-        .create_persistent_subscription_to_all(group_name, &options)
+        .create_persistent_subscription_to_all(group_name, &Default::default())
         .await?;
 
     Ok(())
@@ -291,8 +288,7 @@ async fn test_create_persistent_subscription_to_all(
 async fn test_update_persistent_subscription(client: &Client) -> Result<(), Box<dyn Error>> {
     let stream_id = fresh_stream_id("update_persistent_sub");
 
-    let mut options =
-        eventstore::PersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
+    let mut options = PersistentSubscriptionOptions::default();
 
     client
         .create_persistent_subscription(stream_id.as_str(), "a_group_name", &options)
@@ -313,8 +309,7 @@ async fn test_update_persistent_subscription_to_all(
 ) -> eventstore::Result<()> {
     let group_name = names.next().unwrap();
 
-    let mut options =
-        eventstore::PersistentSubscriptionToAllOptions::default().deadline(Duration::from_secs(2));
+    let mut options = PersistentSubscriptionToAllOptions::default();
 
     client
         .create_persistent_subscription_to_all(group_name.as_str(), &options)
@@ -332,18 +327,13 @@ async fn test_update_persistent_subscription_to_all(
 // We test we can successfully delete a persistent subscription.
 async fn test_delete_persistent_subscription(client: &Client) -> Result<(), Box<dyn Error>> {
     let stream_id = fresh_stream_id("delete_persistent_sub");
-    let options =
-        eventstore::PersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
 
     client
-        .create_persistent_subscription(stream_id.as_str(), "a_group_name", &options)
+        .create_persistent_subscription(stream_id.as_str(), "a_group_name", &Default::default())
         .await?;
 
-    let options =
-        eventstore::DeletePersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
-
     client
-        .delete_persistent_subscription(stream_id, "a_group_name", &options)
+        .delete_persistent_subscription(stream_id, "a_group_name", &Default::default())
         .await?;
 
     Ok(())
@@ -354,18 +344,13 @@ async fn test_delete_persistent_subscription_to_all(
     names: &mut names::Generator<'_>,
 ) -> eventstore::Result<()> {
     let group_name = names.next().unwrap();
-    let options =
-        eventstore::PersistentSubscriptionToAllOptions::default().deadline(Duration::from_secs(2));
 
     client
-        .create_persistent_subscription_to_all(group_name.as_str(), &options)
+        .create_persistent_subscription_to_all(group_name.as_str(), &Default::default())
         .await?;
 
-    let options =
-        eventstore::DeletePersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
-
     client
-        .delete_persistent_subscription_to_all(group_name.as_str(), &options)
+        .delete_persistent_subscription_to_all(group_name.as_str(), &Default::default())
         .await?;
 
     Ok(())
@@ -374,11 +359,9 @@ async fn test_delete_persistent_subscription_to_all(
 async fn test_persistent_subscription(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("persistent_subscription");
     let events = generate_events("es6-persistent-subscription-test".to_string(), 5);
-    let options =
-        eventstore::PersistentSubscriptionOptions::default().deadline(Duration::from_secs(2));
 
     client
-        .create_persistent_subscription(stream_id.as_str(), "a_group_name", &options)
+        .create_persistent_subscription(stream_id.as_str(), "a_group_name", &Default::default())
         .await?;
 
     let _ = client
@@ -441,8 +424,7 @@ async fn test_persistent_subscription_to_all(
     let group_name = names.next().unwrap();
 
     let options = eventstore::PersistentSubscriptionToAllOptions::default()
-        .start_from(eventstore::StreamPosition::Start)
-        .deadline(Duration::from_secs(2));
+        .start_from(eventstore::StreamPosition::Start);
 
     client
         .create_persistent_subscription_to_all(group_name.as_str(), &options)
