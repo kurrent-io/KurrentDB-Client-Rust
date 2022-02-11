@@ -1,6 +1,6 @@
 [package]
 name = "eventstore"
-version = "2.0.0"
+version = "2.0.0-alpha.2"
 authors = ["Yorick Laupa <yo.eight@gmail.com>"]
 edition = "2021"
 
