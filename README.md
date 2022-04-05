@@ -53,11 +53,11 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .append_to_stream("language-stream", &Default::default(), evt)
         .await?;
 
-    let result = client
+    let mut result = client
         .read_stream("language-stream", &Default::default())
         .await?;
 
-	while let Some(event) = stream.next().await? {
+	while let Some(event) = result.next().await? {
 	    let event = event.get_original_event()
 		    .as_json::<Foo>()?;
 
