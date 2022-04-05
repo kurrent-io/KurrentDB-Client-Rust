@@ -57,13 +57,13 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         .read_stream("language-stream", &Default::default())
         .await?;
 
-	while let Some(event) = result.next().await? {
-	    let event = event.get_original_event()
-		    .as_json::<Foo>()?;
+    while let Some(event) = result.next().await? {
+        let event = event.get_original_event()
+          .as_json::<Foo>()?;
 
-	    // Do something productive with the result.
-	    println!("{:?}", event);
-	}
+        // Do something productive with the result.
+        println!("{:?}", event);
+    }
 
     Ok(())
 }
