@@ -55,6 +55,10 @@ impl ProjectionClient {
         ProjectionClient { client }
     }
 
+    pub fn settings(&self) -> &ClientSettings {
+        self.client.connection_settings()
+    }
+
     pub async fn create<Name>(
         &self,
         name: Name,
@@ -596,4 +600,10 @@ fn parse_value(value: prost_types::Value) -> serde_json::Value {
     }
 
     param.expect("not empty")
+}
+
+impl From<crate::Client> for ProjectionClient {
+    fn from(src: crate::Client) -> Self {
+        Self { client: src.client }
+    }
 }

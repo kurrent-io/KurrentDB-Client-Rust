@@ -1,14 +1,16 @@
 use futures::stream::TryStreamExt;
+use std::time::Duration;
 use std::time::SystemTime;
-use std::{collections::HashMap, time::Duration};
 
-use crate::event_store::generated::monitoring;
 use crate::event_store::generated::operations;
 use crate::event_store::generated::users;
 use crate::event_store::generated::Empty;
-use crate::ClientSettings;
+use crate::{ClientSettings, Endpoint};
 
 pub(crate) mod gossip;
+mod stats;
+
+pub use stats::*;
 
 pub use crate::server_features::{Features, ServerInfo, ServerVersion};
 pub use gossip::{MemberInfo, VNodeState};
@@ -25,50 +27,26 @@ pub struct OperationalOptions {
 
 crate::impl_options_trait!(OperationalOptions);
 
-pub struct StatsOptions {
-    pub(crate) common_operation_options: crate::options::CommonOperationOptions,
-    pub(crate) refresh_time: Duration,
-    pub(crate) use_metadata: bool,
-}
-
-impl Default for StatsOptions {
-    fn default() -> StatsOptions {
-        StatsOptions {
-            common_operation_options: Default::default(),
-            refresh_time: Duration::from_secs(1),
-            use_metadata: false,
-        }
-    }
-}
-
-impl StatsOptions {
-    pub fn refresh_time(self, value: Duration) -> Self {
-        Self {
-            refresh_time: value,
-            ..self
-        }
-    }
-
-    pub fn use_metadata(self, value: bool) -> Self {
-        Self {
-            use_metadata: value,
-            ..self
-        }
-    }
-}
-
-crate::impl_options_trait!(StatsOptions, crate::options::OperationKind::Streaming);
-
 impl Client {
     pub fn new(setts: ClientSettings) -> Self {
         let inner = crate::grpc::GrpcClient::create(tokio::runtime::Handle::current(), setts);
         Self { inner }
     }
 
+    pub async fn current_selected_node(&self) -> crate::Result<Endpoint> {
+        let handle = self.inner.current_selected_node().await?;
+
+        Ok(handle.endpoint)
+    }
+
     pub async fn server_version(&self) -> crate::Result<Option<ServerInfo>> {
         let handle = self.inner.current_selected_node().await?;
 
         Ok(handle.server_info)
+    }
+
+    pub fn settings(&self) -> &ClientSettings {
+        self.inner.connection_settings()
     }
 
     pub async fn read_gossip(&self) -> crate::Result<Vec<gossip::MemberInfo>> {
@@ -83,23 +61,7 @@ impl Client {
     }
 
     pub async fn stats(&self, options: &StatsOptions) -> crate::Result<Stats> {
-        let handle = self.inner.current_selected_node().await?;
-
-        let req = monitoring::StatsReq {
-            use_metadata: options.use_metadata,
-            refresh_time_period_in_ms: options.refresh_time.as_millis() as u64,
-        };
-
-        let req = crate::commands::new_request(self.inner.connection_settings(), options, req);
-        let mut client = monitoring::monitoring_client::MonitoringClient::new(handle.channel);
-
-        let inner = client
-            .stats(req)
-            .await
-            .map_err(crate::Error::from_grpc)?
-            .into_inner();
-
-        Ok(Stats { inner })
+        grpc_stats(&self.inner, options).await
     }
 
     pub async fn start_scavenge(
@@ -450,22 +412,6 @@ impl Client {
 impl From<crate::Client> for Client {
     fn from(src: crate::Client) -> Self {
         Self { inner: src.client }
-    }
-}
-
-pub struct Stats {
-    inner: tonic::Streaming<monitoring::StatsResp>,
-}
-
-impl Stats {
-    pub async fn next(&mut self) -> crate::Result<Option<HashMap<String, String>>> {
-        let result = self
-            .inner
-            .try_next()
-            .await
-            .map_err(crate::Error::from_grpc)?;
-
-        Ok(result.map(|resp| resp.stats))
     }
 }
 

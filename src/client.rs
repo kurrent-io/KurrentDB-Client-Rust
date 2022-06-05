@@ -36,6 +36,10 @@ impl Client {
         Client::with_runtime_handle(tokio::runtime::Handle::current(), settings)
     }
 
+    pub fn settings(&self) -> &ClientSettings {
+        self.client.connection_settings()
+    }
+
     /// Creates a gRPC client to an EventStoreDB database using an existing tokio runtime.
     pub fn with_runtime_handle(
         handle: tokio::runtime::Handle,

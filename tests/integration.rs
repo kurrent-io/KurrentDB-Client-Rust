@@ -1283,18 +1283,12 @@ async fn test_gossip(client: &operations::Client) -> eventstore::Result<()> {
 }
 
 async fn test_stats(client: &operations::Client) -> eventstore::Result<()> {
-    let options = StatsOptions::default()
-        .use_metadata(true)
-        .refresh_time(Duration::from_millis(500));
+    let options = StatsOptions::default().refresh_time(Duration::from_millis(500));
 
     let mut stream = client.stats(&options).await?;
-    let result = stream.next().await?;
+    let result = stream.next_statistics().await?;
 
-    assert!(result.is_some());
-
-    let result = result.unwrap();
-
-    assert!(result.len() > 0);
+    assert!(result.es.queues.len() > 0);
     Ok(())
 }
 
