@@ -88,3 +88,5 @@ We have a community discussion space at [EventStoreDB Discuss].
 [eventstoredb docs]: https://developers.eventstore.com/latest.html
 [eventstoredb discuss]: https://discuss.eventstore.com/
 [eventstoredb support]: https://eventstore.com/support/
+
+CI test for QA 22.10
