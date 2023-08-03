@@ -46,9 +46,7 @@ fn test_connection_string() {
     #[derive(Debug, Serialize, Deserialize)]
     struct Mockup {
         string: String,
-        #[serde(default)]
-        expect_failure: bool,
-        expected: ClientSettings,
+        expected: Option<ClientSettings>,
     }
 
     #[derive(Debug, Serialize, Deserialize)]
@@ -62,13 +60,14 @@ fn test_connection_string() {
     for mockup in fixtures.mockups {
         match mockup.string.as_str().parse::<ClientSettings>() {
             Ok(current) => assert_eq!(
-                current, mockup.expected,
+                current,
+                mockup.expected.unwrap(),
                 "Failed parsing [{}]",
                 mockup.string
             ),
 
             Err(e) => {
-                if !mockup.expect_failure {
+                if mockup.expected.is_some() {
                     panic!("Failed parsing [{}]: {:?}", mockup.string, e);
                 }
             }
@@ -358,9 +357,8 @@ impl ClientSettings {
 
         result.dns_discover = scheme == "esdb+discover://";
         let authority_valid_char = |c: char| c.is_ascii() && c != '@';
-        let host_valid_char =
-            |c: char| c.is_alphanumeric() || c == '-' || c == '.' || c == ':' || c == ',';
-        let (mut input, mut content) = take_while(authority_valid_char)(initial_input)?;
+        let (mut input, content) = take_while(authority_valid_char)(initial_input)?;
+        let mut content = content.to_string();
         let at_tagged = opt(tag("@"))(input)?;
 
         if let (new_input, Some(_)) = at_tagged {
@@ -389,7 +387,7 @@ impl ClientSettings {
                 }
             }
 
-            let (new_input, new_content) = take_while(host_valid_char)(new_input)?;
+            let (new_input, new_content) = parse_host(new_input)?;
 
             input = new_input;
             content = new_content;
@@ -397,7 +395,7 @@ impl ClientSettings {
         }
 
         if !parsed_authority {
-            let (new_input, new_content) = take_while(host_valid_char)(initial_input)?;
+            let (new_input, new_content) = parse_host(initial_input)?;
             input = new_input;
             content = new_content;
         }
@@ -690,6 +688,22 @@ impl ClientSettings {
         hyper::Uri::from_maybe_shared(format!("{}://{}:{}", scheme, endpoint.host, endpoint.port))
             .unwrap()
     }
+}
+
+pub fn parse_host(input: &str) -> IResult<&str, String> {
+    fn valid_char(c: char) -> bool {
+        c.is_alphanumeric() || matches!(c, '-' | '.' | ':' | ',' | '_')
+    }
+
+    let (input, head) = nom::character::complete::satisfy(|c| c.is_ascii_alphanumeric())(input)?;
+    let (input, tail) = take_while(valid_char)(input)?;
+
+    let mut host = String::new();
+
+    host.push(head);
+    host.push_str(tail);
+
+    Ok((input, host))
 }
 
 impl FromStr for ClientSettings {

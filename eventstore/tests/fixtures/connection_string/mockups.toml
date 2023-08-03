@@ -324,39 +324,9 @@ port = 2_113
 
 [[mockups]]
 string = "esdb://localhost?keepAliveInterval=20000&keepAliveTimeout=-33"
-expect_failure = true
-[mockups.expected]
-dns_discover = false
-max_discover_attempts = 3
-discovery_interval = 500
-gossip_timeout = 3_000
-preference = "Leader"
-secure = true
-tls_verify_cert = true
-throw_on_append_failure = true
-keep_alive_interval = 20_000
-keep_alive_timeout = 30_000
-[[mockups.expected.hosts]]
-host = "localhost"
-port = 2_113
 
 [[mockups]]
 string = "esdb://localhost?keepAliveInterval=kjslkjfds&keepAliveTimeout=30000"
-expect_failure = true
-[mockups.expected]
-dns_discover = false
-max_discover_attempts = 3
-discovery_interval = 500
-gossip_timeout = 3_000
-preference = "Leader"
-secure = true
-tls_verify_cert = true
-throw_on_append_failure = true
-keep_alive_interval = 20_000
-keep_alive_timeout = 30_000
-[[mockups.expected.hosts]]
-host = "localhost"
-port = 2_113
 
 [[mockups]]
 string = "esdb://localhost?defaultDeadline=1"
@@ -411,3 +381,23 @@ connection_name = "foobar"
 [[mockups.expected.hosts]]
 host = "localhost"
 port = 2_113
+
+[[mockups]]
+string = "esdb://valid_host_name"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+throw_on_append_failure = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "valid_host_name"
+port = 2_113
+
+[[mockups]]
+string = "esdb://_invalid_host_name"
