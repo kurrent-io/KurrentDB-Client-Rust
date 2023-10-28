@@ -205,7 +205,7 @@ async fn test_persistent_subscription_to_all(
             }
         }
 
-        Ok(count)
+        Ok::<_, eventstore::Error>(count)
     })
     .await;
 

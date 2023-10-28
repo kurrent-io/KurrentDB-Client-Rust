@@ -102,7 +102,7 @@ pub mod server_features_client {
         }
         pub async fn get_supported_methods(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
+            request: impl tonic::IntoRequest<()>,
         ) -> std::result::Result<tonic::Response<super::SupportedMethods>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(

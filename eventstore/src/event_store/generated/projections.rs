@@ -34,7 +34,7 @@ pub mod create_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum Mode {
             #[prost(message, tag = "1")]
-            OneTime(super::super::super::Empty),
+            OneTime(()),
             #[prost(message, tag = "2")]
             Transient(Transient),
             #[prost(message, tag = "3")]
@@ -71,7 +71,7 @@ pub mod update_req {
             #[prost(bool, tag = "3")]
             EmitEnabled(bool),
             #[prost(message, tag = "4")]
-            NoEmitOptions(super::super::super::Empty),
+            NoEmitOptions(()),
         }
     }
 }
@@ -124,13 +124,13 @@ pub mod statistics_req {
             #[prost(string, tag = "1")]
             Name(::prost::alloc::string::String),
             #[prost(message, tag = "2")]
-            All(super::super::super::Empty),
+            All(()),
             #[prost(message, tag = "3")]
-            Transient(super::super::super::Empty),
+            Transient(()),
             #[prost(message, tag = "4")]
-            Continuous(super::super::super::Empty),
+            Continuous(()),
             #[prost(message, tag = "5")]
-            OneTime(super::super::super::Empty),
+            OneTime(()),
         }
     }
 }
@@ -567,8 +567,8 @@ pub mod projections_client {
         }
         pub async fn restart_subsystem(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,

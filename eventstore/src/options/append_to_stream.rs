@@ -1,4 +1,3 @@
-use crate::event_store::client::shared::Empty;
 use crate::event_store::client::streams::append_req::options::ExpectedStreamRevision;
 use crate::private::Sealed;
 use crate::{EventData, ExpectedRevision};
@@ -15,7 +14,7 @@ options! {
 impl Default for AppendToStreamOptions {
     fn default() -> Self {
         Self {
-            version: ExpectedStreamRevision::Any(Empty {}),
+            version: ExpectedStreamRevision::Any(()),
             common_operation_options: Default::default(),
         }
     }
@@ -26,9 +25,9 @@ impl AppendToStreamOptions {
     /// the given expected version. Default: `ExpectedVersion::Any`.
     pub fn expected_revision(self, version: ExpectedRevision) -> Self {
         let version = match version {
-            ExpectedRevision::Any => ExpectedStreamRevision::Any(Empty {}),
-            ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(Empty {}),
-            ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(Empty {}),
+            ExpectedRevision::Any => ExpectedStreamRevision::Any(()),
+            ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(()),
+            ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(()),
             ExpectedRevision::Exact(version) => ExpectedStreamRevision::Revision(version),
         };
 

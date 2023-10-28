@@ -1,5 +1,4 @@
 use crate::event_store::client::projections;
-use crate::event_store::client::shared::Empty;
 use crate::grpc::{ClientSettings, GrpcClient};
 use crate::options::projections::{
     CreateProjectionOptions, DeleteProjectionOptions, GenericProjectionOptions,
@@ -137,7 +136,7 @@ impl ProjectionClient {
                 .copied()
                 .map(projections::update_req::options::EmitOption::EmitEnabled)
                 .or(Some(
-                    projections::update_req::options::EmitOption::NoEmitOptions(Empty {}),
+                    projections::update_req::options::EmitOption::NoEmitOptions(()),
                 )),
             query,
         };
@@ -225,10 +224,8 @@ impl ProjectionClient {
     ) -> crate::Result<BoxStream<'_, crate::Result<ProjectionStatus>>> {
         let mode = match stats_for {
             StatsFor::Name(name) => projections::statistics_req::options::Mode::Name(name),
-            StatsFor::AllProjections => projections::statistics_req::options::Mode::All(Empty {}),
-            StatsFor::AllContinuous => {
-                projections::statistics_req::options::Mode::Continuous(Empty {})
-            }
+            StatsFor::AllProjections => projections::statistics_req::options::Mode::All(()),
+            StatsFor::AllContinuous => projections::statistics_req::options::Mode::Continuous(()),
         };
 
         let stats_options = projections::statistics_req::Options { mode: Some(mode) };
@@ -497,8 +494,7 @@ impl ProjectionClient {
     }
 
     pub async fn restart_subsystem(&self, options: &GenericProjectionOptions) -> crate::Result<()> {
-        let req =
-            crate::commands::new_request(self.client.connection_settings(), options, Empty {});
+        let req = crate::commands::new_request(self.client.connection_settings(), options, ());
 
         self.client
             .execute(|handle| async {

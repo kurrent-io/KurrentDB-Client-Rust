@@ -1,6 +1,5 @@
-use crate::commands::{
-    parse_position, parse_stream_position, BothTypeOfStream, StreamKind, StreamPositionTypeSelector,
-};
+use crate::commands::{BothTypeOfStream, StreamKind, StreamPositionTypeSelector};
+use crate::event_store::generated::{parse_position, parse_stream_position};
 use crate::grpc::Handle;
 use crate::{
     ClientSettings, GetPersistentSubscriptionInfoOptions, ListPersistentSubscriptionsOptions,
