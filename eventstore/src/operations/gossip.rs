@@ -1,5 +1,4 @@
 use crate::event_store::client::gossip as wire;
-use crate::event_store::client::shared::{self, Empty};
 use crate::grpc::HyperClient;
 use crate::http::http_configure_auth;
 use crate::request::build_request_metadata;
@@ -9,19 +8,13 @@ use serde::{Deserialize, Serialize};
 use tonic::{Request, Status};
 use uuid::Uuid;
 
-fn uuid_from_structured(most: u64, least: u64) -> Uuid {
-    let repr = (most as u128) << 64 | least as u128;
-
-    Uuid::from_u128(repr)
-}
-
 pub async fn read(
     settings: &ClientSettings,
     client: &HyperClient,
     uri: hyper::Uri,
 ) -> Result<Vec<MemberInfo>, Status> {
     let inner = wire::gossip_client::GossipClient::with_origin(client, uri);
-    let mut req = Request::new(Empty {});
+    let mut req = Request::new(());
 
     *req.metadata_mut() = build_request_metadata(settings, &Default::default());
 
@@ -31,19 +24,11 @@ pub async fn read(
     for wire_member in wire_members {
         let state = VNodeState::from_i32(wire_member.state)?;
 
-        let instance_id =
-            if let Some(wire_uuid) = wire_member.instance_id.and_then(|uuid| uuid.value) {
-                match wire_uuid {
-                    shared::uuid::Value::Structured(repr) => uuid_from_structured(
-                        repr.most_significant_bits as u64,
-                        repr.least_significant_bits as u64,
-                    ),
-
-                    shared::uuid::Value::String(str) => Uuid::parse_str(str.as_str()).unwrap(),
-                }
-            } else {
-                Uuid::nil()
-            };
+        let instance_id = if let Some(wire_uuid) = wire_member.instance_id {
+            wire_uuid.try_into().unwrap()
+        } else {
+            Uuid::nil()
+        };
 
         let http_end_point = if let Some(endpoint) = wire_member.http_end_point {
             let endpoint = Endpoint {

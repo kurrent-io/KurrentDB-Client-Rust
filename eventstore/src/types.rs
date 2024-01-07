@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use std::fmt::Formatter;
 use std::time::Duration;
 
-use crate::commands;
+use crate::event_store;
 use crate::operations::gossip::VNodeState;
 use bytes::Bytes;
 use chrono::{DateTime, Utc};
@@ -316,14 +316,14 @@ impl ResolvedEvent {
 /// user-defined metadata.
 #[derive(Debug, Clone)]
 pub enum StreamMetadataResult {
-    Deleted(String),
-    NotFound(String),
+    Deleted,
+    NotFound,
     Success(Box<VersionedMetadata>),
 }
 
 impl StreamMetadataResult {
     pub fn is_deleted(&self) -> bool {
-        if let StreamMetadataResult::Deleted(_) = self {
+        if let StreamMetadataResult::Deleted = self {
             return true;
         }
 
@@ -331,7 +331,7 @@ impl StreamMetadataResult {
     }
 
     pub fn is_not_found(&self) -> bool {
-        if let StreamMetadataResult::NotFound(_) = self {
+        if let StreamMetadataResult::NotFound = self {
             return true;
         }
 
@@ -1058,9 +1058,21 @@ pub enum SubscriptionEvent {
     /// filters are used.
     Checkpoint(Position),
 
+    /// If running a regular subscription, indicates the first's event position.
     FirstStreamPosition(u64),
+
+    /// If running a regular subscription, indicates the last's event position.
     LastStreamPosition(u64),
+
+    /// If running a subscription to $all, indicates the position of the $all last's event.
     LastAllPosition(Position),
+
+    /// Indicates the subscription has reached the head of the stream.
+    CaughtUp,
+
+    /// Indicates the subscription has fell behind, meaning it's no longer keeping up with the
+    /// stream's pace.
+    FellBehind,
 }
 
 #[derive(Debug)]
@@ -1193,6 +1205,41 @@ pub struct PersistentSubscriptionSettings<A> {
 
     /// The strategy to use for distributing events to client consumers.
     pub consumer_strategy_name: SystemConsumerStrategy,
+}
+
+impl<A> PersistentSubscriptionSettings<A> {
+    pub(crate) fn named_consumer_strategy_as_i32(&self) -> Result<i32> {
+        match self.consumer_strategy_name {
+            SystemConsumerStrategy::DispatchToSingle => Ok(0),
+            SystemConsumerStrategy::RoundRobin => Ok(1),
+            SystemConsumerStrategy::Pinned => Ok(2),
+            SystemConsumerStrategy::Custom(_) | SystemConsumerStrategy::PinnedByCorrelation => {
+                // Currently unsupported by all released servers.
+                Err(Error::UnsupportedFeature)
+            }
+        }
+    }
+
+    pub(crate) fn map<F, B>(self, f: F) -> PersistentSubscriptionSettings<B>
+    where
+        F: FnOnce(A) -> B,
+    {
+        PersistentSubscriptionSettings {
+            resolve_link_tos: self.resolve_link_tos,
+            start_from: self.start_from.map(f),
+            extra_statistics: self.extra_statistics,
+            message_timeout: self.message_timeout,
+            max_retry_count: self.max_retry_count,
+            live_buffer_size: self.live_buffer_size,
+            read_batch_size: self.read_batch_size,
+            history_buffer_size: self.history_buffer_size,
+            checkpoint_after: self.checkpoint_after,
+            checkpoint_lower_bound: self.checkpoint_lower_bound,
+            checkpoint_upper_bound: self.checkpoint_upper_bound,
+            max_subscriber_count: self.max_subscriber_count,
+            consumer_strategy_name: self.consumer_strategy_name,
+        }
+    }
 }
 
 impl<A> Default for PersistentSubscriptionSettings<A> {
@@ -1576,6 +1623,22 @@ pub struct PersistentSubscriptionInfo<A> {
     pub stats: PersistentSubscriptionStats,
 }
 
+impl<A> PersistentSubscriptionInfo<A> {
+    pub(crate) fn map<F, B>(self, f: F) -> PersistentSubscriptionInfo<B>
+    where
+        F: FnOnce(A) -> B,
+    {
+        PersistentSubscriptionInfo {
+            event_source: self.event_source,
+            group_name: self.group_name,
+            status: self.status,
+            connections: self.connections,
+            settings: self.settings.map(|setts| setts.map(f)),
+            stats: self.stats,
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 pub enum RevisionOrPosition {
     Revision(u64),
@@ -1687,7 +1750,7 @@ impl<'de> serde::de::Visitor<'de> for PositionVisitor {
     where
         E: serde::de::Error,
     {
-        if let Ok(v) = commands::parse_position(v) {
+        if let Ok(v) = event_store::generated::parse_position(v) {
             Ok(v)
         } else {
             Err(serde::de::Error::custom(format!(
@@ -1768,7 +1831,7 @@ impl<'de> serde::de::Visitor<'de> for StreamRevOrPosVisitor {
     where
         E: serde::de::Error,
     {
-        if let Ok(v) = commands::parse_stream_position(v) {
+        if let Ok(v) = event_store::generated::parse_stream_position(v) {
             Ok(v)
         } else {
             Err(serde::de::Error::custom(format!(
@@ -1847,5 +1910,49 @@ impl<'de> serde::de::Visitor<'de> for Measurements {
         }
 
         Ok(PersistentSubscriptionMeasurements(map))
+    }
+}
+
+pub trait StreamName {
+    fn into_stream_name(self) -> Bytes;
+}
+
+impl StreamName for Bytes {
+    fn into_stream_name(self) -> Bytes {
+        self
+    }
+}
+
+impl<'a> StreamName for &'a str {
+    fn into_stream_name(self) -> Bytes {
+        self.to_string().into()
+    }
+}
+
+impl StreamName for String {
+    fn into_stream_name(self) -> Bytes {
+        self.into()
+    }
+}
+
+pub trait MetadataStreamName {
+    fn into_metadata_stream_name(self) -> Bytes;
+}
+
+impl MetadataStreamName for Bytes {
+    fn into_metadata_stream_name(self) -> Bytes {
+        self
+    }
+}
+
+impl<'a> MetadataStreamName for &'a str {
+    fn into_metadata_stream_name(self) -> Bytes {
+        format!("$${}", self).to_string().into()
+    }
+}
+
+impl MetadataStreamName for String {
+    fn into_metadata_stream_name(self) -> Bytes {
+        self.as_str().into_metadata_stream_name()
     }
 }

@@ -1,5 +1,6 @@
+use std::{cmp::Ordering, fmt::Display};
+
 use crate::event_store::generated::server_features::server_features_client::ServerFeaturesClient;
-use crate::event_store::generated::Empty;
 use crate::grpc::HyperClient;
 use bitflags::bitflags;
 use tonic::{Code, Request, Status};
@@ -39,8 +40,83 @@ impl ServerVersion {
     }
 }
 
-#[allow(unused)]
-#[derive(Clone, Copy, Debug)]
+impl Display for ServerVersion {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}.{}.{}", self.major(), self.minor(), self.patch())
+    }
+}
+
+impl PartialEq<usize> for ServerVersion {
+    fn eq(&self, other: &usize) -> bool {
+        self.major() == *other
+    }
+}
+
+impl PartialEq<(usize, usize)> for ServerVersion {
+    fn eq(&self, other: &(usize, usize)) -> bool {
+        let (maj, min) = other;
+        self.eq(maj) && self.minor() == *min
+    }
+}
+
+impl PartialEq<(usize, usize, usize)> for ServerVersion {
+    fn eq(&self, other: &(usize, usize, usize)) -> bool {
+        let (maj, min, patch) = other;
+
+        self.eq(&(*maj, *min)) && self.patch() == *patch
+    }
+}
+
+impl PartialOrd<usize> for ServerVersion {
+    fn partial_cmp(&self, other: &usize) -> Option<Ordering> {
+        self.major().partial_cmp(other)
+    }
+}
+
+impl PartialOrd<(usize, usize)> for ServerVersion {
+    fn partial_cmp(&self, other: &(usize, usize)) -> Option<Ordering> {
+        let (maj, min) = other;
+        match self.partial_cmp(maj)? {
+            Ordering::Equal => self.minor().partial_cmp(min),
+            other => Some(other),
+        }
+    }
+}
+
+impl PartialOrd<(usize, usize, usize)> for ServerVersion {
+    fn partial_cmp(&self, other: &(usize, usize, usize)) -> Option<Ordering> {
+        let (maj, min, patch) = other;
+
+        match self.partial_cmp(&(*maj, *min))? {
+            Ordering::Equal => self.patch().partial_cmp(patch),
+            other => Some(other),
+        }
+    }
+}
+
+#[cfg(test)]
+mod server_version_tests {
+    use super::ServerVersion;
+
+    #[test]
+    fn equality_checks() {
+        let version = ServerVersion {
+            major: 23,
+            minor: 10,
+            patch: 42,
+        };
+
+        assert_eq!(version, 23);
+        assert_eq!(version, (23, 10));
+        assert_eq!(version, (23, 10, 42));
+
+        assert!(version <= 23);
+        assert!(version <= (23, 10));
+        assert!(version <= (23, 10, 42));
+    }
+}
+
+#[derive(Clone, Copy, Debug, Default)]
 pub struct ServerInfo {
     pub(crate) version: ServerVersion,
     pub(crate) features: Features,
@@ -51,8 +127,8 @@ impl ServerInfo {
         self.version
     }
 
-    pub fn features(&self) -> Features {
-        self.features
+    pub fn contains_features(&self, feats: Features) -> bool {
+        self.features.contains(feats)
     }
 }
 
@@ -62,7 +138,7 @@ pub(crate) async fn supported_methods(
 ) -> Result<ServerInfo, Status> {
     let mut client = ServerFeaturesClient::with_origin(client, uri);
     let methods = client
-        .get_supported_methods(Request::new(Empty {}))
+        .get_supported_methods(Request::new(()))
         .await?
         .into_inner();
 

@@ -6,7 +6,6 @@ use std::{collections::HashMap, time::Duration};
 use crate::event_store::generated::monitoring;
 use crate::event_store::generated::operations;
 use crate::event_store::generated::users;
-use crate::event_store::generated::Empty;
 use crate::{ClientSettings, Endpoint};
 
 pub(crate) mod gossip;
@@ -61,10 +60,10 @@ impl Client {
         Ok(handle.endpoint)
     }
 
-    pub async fn server_version(&self) -> crate::Result<Option<ServerInfo>> {
+    pub async fn server_version(&self) -> crate::Result<ServerInfo> {
         let handle = self.inner.current_selected_node().await?;
 
-        Ok(handle.server_info)
+        Ok(handle.server_info())
     }
 
     pub fn settings(&self) -> &ClientSettings {
@@ -180,7 +179,7 @@ impl Client {
 
         let mut client =
             operations::operations_client::OperationsClient::with_origin(handle.client, handle.uri);
-        let req = crate::commands::new_request(self.inner.connection_settings(), options, Empty {});
+        let req = crate::commands::new_request(self.inner.connection_settings(), options, ());
         client
             .shutdown(req)
             .await
@@ -192,7 +191,7 @@ impl Client {
         let handle = self.inner.current_selected_node().await?;
         let mut client =
             operations::operations_client::OperationsClient::with_origin(handle.client, handle.uri);
-        let req = crate::commands::new_request(self.inner.connection_settings(), options, Empty {});
+        let req = crate::commands::new_request(self.inner.connection_settings(), options, ());
 
         client
             .merge_indexes(req)
@@ -205,7 +204,7 @@ impl Client {
         let handle = self.inner.current_selected_node().await?;
         let mut client =
             operations::operations_client::OperationsClient::with_origin(handle.client, handle.uri);
-        let req = crate::commands::new_request(self.inner.connection_settings(), options, Empty {});
+        let req = crate::commands::new_request(self.inner.connection_settings(), options, ());
 
         client
             .resign_node(req)
@@ -243,7 +242,7 @@ impl Client {
         let handle = self.inner.current_selected_node().await?;
         let mut client =
             operations::operations_client::OperationsClient::with_origin(handle.client, handle.uri);
-        let req = crate::commands::new_request(self.inner.connection_settings(), options, Empty {});
+        let req = crate::commands::new_request(self.inner.connection_settings(), options, ());
 
         client
             .restart_persistent_subscriptions(req)

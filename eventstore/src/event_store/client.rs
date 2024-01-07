@@ -1,7 +1,3 @@
-pub mod shared {
-    pub use super::super::generated::client::*;
-}
-
 pub mod gossip {
     pub use super::super::generated::gossip::*;
 }

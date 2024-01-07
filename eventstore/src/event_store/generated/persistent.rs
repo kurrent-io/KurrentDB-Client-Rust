@@ -32,18 +32,18 @@ pub mod read_req {
             #[derive(Clone, PartialEq, ::prost::Oneof)]
             pub enum Content {
                 #[prost(message, tag = "1")]
-                Structured(super::super::super::super::Empty),
+                Structured(()),
                 #[prost(message, tag = "2")]
-                String(super::super::super::super::Empty),
+                String(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum StreamOption {
             #[prost(message, tag = "1")]
-            StreamIdentifier(super::super::super::StreamIdentifier),
+            StreamIdentifier(crate::event_store::generated::common::StreamIdentifier),
             #[prost(message, tag = "5")]
-            All(super::super::super::Empty),
+            All(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -52,7 +52,7 @@ pub mod read_req {
         #[prost(bytes = "vec", tag = "1")]
         pub id: ::prost::alloc::vec::Vec<u8>,
         #[prost(message, repeated, tag = "2")]
-        pub ids: ::prost::alloc::vec::Vec<super::super::Uuid>,
+        pub ids: ::prost::alloc::vec::Vec<crate::event_store::generated::common::Uuid>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
@@ -60,7 +60,7 @@ pub mod read_req {
         #[prost(bytes = "vec", tag = "1")]
         pub id: ::prost::alloc::vec::Vec<u8>,
         #[prost(message, repeated, tag = "2")]
-        pub ids: ::prost::alloc::vec::Vec<super::super::Uuid>,
+        pub ids: ::prost::alloc::vec::Vec<crate::event_store::generated::common::Uuid>,
         #[prost(enumeration = "nack::Action", tag = "3")]
         pub action: i32,
         #[prost(string, tag = "4")]
@@ -143,9 +143,10 @@ pub mod read_resp {
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct RecordedEvent {
             #[prost(message, optional, tag = "1")]
-            pub id: ::core::option::Option<super::super::super::Uuid>,
+            pub id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
             #[prost(message, optional, tag = "2")]
-            pub stream_identifier: ::core::option::Option<super::super::super::StreamIdentifier>,
+            pub stream_identifier:
+                ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
             #[prost(uint64, tag = "3")]
             pub stream_revision: u64,
             #[prost(uint64, tag = "4")]
@@ -168,7 +169,7 @@ pub mod read_resp {
             #[prost(uint64, tag = "3")]
             CommitPosition(u64),
             #[prost(message, tag = "4")]
-            NoPosition(super::super::super::Empty),
+            NoPosition(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -176,7 +177,7 @@ pub mod read_resp {
             #[prost(int32, tag = "5")]
             RetryCount(i32),
             #[prost(message, tag = "6")]
-            NoRetryCount(super::super::super::Empty),
+            NoRetryCount(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -207,7 +208,8 @@ pub mod create_req {
     pub struct Options {
         #[deprecated]
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(string, tag = "2")]
         pub group_name: ::prost::alloc::string::String,
         #[prost(message, optional, tag = "3")]
@@ -230,7 +232,8 @@ pub mod create_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StreamOptions {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "stream_options::RevisionOption", tags = "2, 3, 4")]
         pub revision_option: ::core::option::Option<stream_options::RevisionOption>,
     }
@@ -242,9 +245,9 @@ pub mod create_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            Start(super::super::super::Empty),
+            Start(()),
             #[prost(message, tag = "4")]
-            End(super::super::super::Empty),
+            End(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -291,7 +294,7 @@ pub mod create_req {
                 #[prost(uint32, tag = "3")]
                 Max(u32),
                 #[prost(message, tag = "4")]
-                Count(super::super::super::super::Empty),
+                Count(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
@@ -300,9 +303,9 @@ pub mod create_req {
             #[prost(message, tag = "1")]
             Position(super::Position),
             #[prost(message, tag = "2")]
-            Start(super::super::super::Empty),
+            Start(()),
             #[prost(message, tag = "3")]
-            End(super::super::super::Empty),
+            End(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -310,7 +313,7 @@ pub mod create_req {
             #[prost(message, tag = "4")]
             Filter(FilterOptions),
             #[prost(message, tag = "5")]
-            NoFilter(super::super::super::Empty),
+            NoFilter(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -420,7 +423,8 @@ pub mod update_req {
     pub struct Options {
         #[deprecated]
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(string, tag = "2")]
         pub group_name: ::prost::alloc::string::String,
         #[prost(message, optional, tag = "3")]
@@ -443,7 +447,8 @@ pub mod update_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StreamOptions {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "stream_options::RevisionOption", tags = "2, 3, 4")]
         pub revision_option: ::core::option::Option<stream_options::RevisionOption>,
     }
@@ -455,9 +460,9 @@ pub mod update_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            Start(super::super::super::Empty),
+            Start(()),
             #[prost(message, tag = "4")]
-            End(super::super::super::Empty),
+            End(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -474,9 +479,9 @@ pub mod update_req {
             #[prost(message, tag = "1")]
             Position(super::Position),
             #[prost(message, tag = "2")]
-            Start(super::super::super::Empty),
+            Start(()),
             #[prost(message, tag = "3")]
-            End(super::super::super::Empty),
+            End(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -592,9 +597,9 @@ pub mod delete_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum StreamOption {
             #[prost(message, tag = "1")]
-            StreamIdentifier(super::super::super::StreamIdentifier),
+            StreamIdentifier(crate::event_store::generated::common::StreamIdentifier),
             #[prost(message, tag = "3")]
-            All(super::super::super::Empty),
+            All(()),
         }
     }
 }
@@ -623,9 +628,9 @@ pub mod get_info_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum StreamOption {
             #[prost(message, tag = "1")]
-            StreamIdentifier(super::super::super::StreamIdentifier),
+            StreamIdentifier(crate::event_store::generated::common::StreamIdentifier),
             #[prost(message, tag = "2")]
-            All(super::super::super::Empty),
+            All(()),
         }
     }
 }
@@ -752,9 +757,9 @@ pub mod replay_parked_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum StreamOption {
             #[prost(message, tag = "2")]
-            StreamIdentifier(super::super::super::StreamIdentifier),
+            StreamIdentifier(crate::event_store::generated::common::StreamIdentifier),
             #[prost(message, tag = "3")]
-            All(super::super::super::Empty),
+            All(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -762,7 +767,7 @@ pub mod replay_parked_req {
             #[prost(int64, tag = "4")]
             StopAt(i64),
             #[prost(message, tag = "5")]
-            NoLimit(super::super::super::Empty),
+            NoLimit(()),
         }
     }
 }
@@ -789,7 +794,7 @@ pub mod list_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum ListOption {
             #[prost(message, tag = "1")]
-            ListAllSubscriptions(super::super::super::Empty),
+            ListAllSubscriptions(()),
             #[prost(message, tag = "2")]
             ListForStream(super::StreamOption),
         }
@@ -806,9 +811,9 @@ pub mod list_req {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum StreamOption {
             #[prost(message, tag = "1")]
-            Stream(super::super::super::StreamIdentifier),
+            Stream(crate::event_store::generated::common::StreamIdentifier),
             #[prost(message, tag = "2")]
-            All(super::super::super::Empty),
+            All(()),
         }
     }
 }
@@ -1054,8 +1059,8 @@ pub mod persistent_subscriptions_client {
         }
         pub async fn restart_subsystem(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,

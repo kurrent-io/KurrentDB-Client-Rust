@@ -3,23 +3,21 @@
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
-use crate::event_store::client::{persistent, shared, streams};
+use crate::event_store::client::{persistent, streams};
 use crate::types::{
     EventData, ExpectedRevision, PersistentSubscriptionSettings, Position, ReadDirection,
-    RecordedEvent, ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
+    ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
 };
 
-use chrono::{DateTime, Utc};
 use futures::TryStreamExt;
 use nom::AsBytes;
 use persistent::persistent_subscriptions_client::PersistentSubscriptionsClient;
-use prost_types::Timestamp;
-use shared::{Empty, StreamIdentifier, Uuid};
 use streams::streams_client::StreamsClient;
 use tokio::sync::mpsc;
 use tonic::{Request, Streaming};
 
 use crate::batch::BatchAppendClient;
+use crate::event_store::generated::common::StreamIdentifier;
 use crate::grpc::{handle_error, GrpcClient, Handle, Msg};
 use crate::options::append_to_stream::AppendToStreamOptions;
 use crate::options::batch_append::BatchAppendOptions;
@@ -31,210 +29,20 @@ use crate::options::{OperationKind, Options};
 use crate::request::build_request_metadata;
 use crate::server_features::Features;
 use crate::{
-    ClientSettings, CurrentRevision, DeletePersistentSubscriptionOptions, DeleteStreamOptions,
+    ClientSettings, DeletePersistentSubscriptionOptions, DeleteStreamOptions,
     GetPersistentSubscriptionInfoOptions, ListPersistentSubscriptionsOptions, NakAction,
-    PersistentSubscriptionConnectionInfo, PersistentSubscriptionEvent, PersistentSubscriptionInfo,
-    PersistentSubscriptionMeasurements, PersistentSubscriptionStats,
-    PersistentSubscriptionToAllOptions, ReplayParkedMessagesOptions,
-    RestartPersistentSubscriptionSubsystem, RetryOptions, RevisionOrPosition,
-    SubscribeToAllOptions, SubscribeToPersistentSubscriptionOptions, SubscriptionFilter,
-    SystemConsumerStrategy, TombstoneStreamOptions,
+    PersistentSubscriptionEvent, PersistentSubscriptionInfo, PersistentSubscriptionToAllOptions,
+    ReplayParkedMessagesOptions, RestartPersistentSubscriptionSubsystem, RetryOptions,
+    RevisionOrPosition, StreamName, SubscribeToAllOptions,
+    SubscribeToPersistentSubscriptionOptions, SubscriptionFilter, TombstoneStreamOptions,
 };
-
-fn raw_uuid_to_uuid(src: Uuid) -> uuid::Uuid {
-    use byteorder::{BigEndian, ByteOrder};
-
-    let value = src
-        .value
-        .expect("We expect Uuid value to be defined for now");
-
-    match value {
-        shared::uuid::Value::Structured(s) => {
-            let mut buf = [0u8; 16];
-
-            BigEndian::write_i64(&mut buf, s.most_significant_bits);
-            BigEndian::write_i64(&mut buf[8..16], s.least_significant_bits);
-
-            uuid::Uuid::from_bytes(buf)
-        }
-
-        shared::uuid::Value::String(s) => s
-            .parse()
-            .expect("We expect a valid UUID out of this String"),
-    }
-}
-
-fn raw_persistent_uuid_to_uuid(src: Uuid) -> uuid::Uuid {
-    use byteorder::{BigEndian, ByteOrder};
-
-    let value = src
-        .value
-        .expect("We expect Uuid value to be defined for now");
-
-    match value {
-        shared::uuid::Value::Structured(s) => {
-            let mut buf = [0u8; 16];
-
-            BigEndian::write_i64(&mut buf, s.most_significant_bits);
-            BigEndian::write_i64(&mut buf[8..16], s.least_significant_bits);
-
-            uuid::Uuid::from_bytes(buf)
-        }
-
-        shared::uuid::Value::String(s) => s
-            .parse()
-            .expect("We expect a valid UUID out of this String"),
-    }
-}
-
-fn convert_event_data(event: EventData) -> streams::AppendReq {
-    use streams::append_req;
-
-    let id = event.id_opt.unwrap_or_else(uuid::Uuid::new_v4);
-    let id = shared::uuid::Value::String(id.to_string());
-    let id = Uuid { value: Some(id) };
-    let custom_metadata = event.custom_metadata.unwrap_or_default();
-
-    let msg = append_req::ProposedMessage {
-        id: Some(id),
-        metadata: event.metadata,
-        custom_metadata,
-        data: event.payload,
-    };
-
-    let content = append_req::Content::ProposedMessage(msg);
-
-    streams::AppendReq {
-        content: Some(content),
-    }
-}
-
-fn convert_proto_recorded_event(
-    event: streams::read_resp::read_event::RecordedEvent,
-) -> RecordedEvent {
-    let id = event
-        .id
-        .map(raw_uuid_to_uuid)
-        .expect("Unable to parse Uuid [convert_proto_recorded_event]");
-
-    let position = Position {
-        commit: event.commit_position,
-        prepare: event.prepare_position,
-    };
-
-    let event_type = if let Some(tpe) = event.metadata.get("type") {
-        tpe.to_string()
-    } else {
-        "<no-event-type-provided>".to_string()
-    };
-
-    let created: DateTime<Utc> = if let Some(ticks_since_epoch) = event.metadata.get("created") {
-        let ticks_since_epoch = ticks_since_epoch.parse::<u64>().unwrap_or(0);
-        let secs_since_epoch = ticks_since_epoch / 10_000_000;
-
-        SystemTime::UNIX_EPOCH
-            .add(Duration::from_secs(secs_since_epoch))
-            .into()
-    } else {
-        SystemTime::UNIX_EPOCH.into()
-    };
-
-    let is_json = if let Some(content_type) = event.metadata.get("content-type") {
-        matches!(content_type.as_str(), "application/json")
-    } else {
-        false
-    };
-
-    let stream_id = String::from_utf8_lossy(
-        event
-            .stream_identifier
-            .expect("stream_identifier is always defined")
-            .stream_name
-            .as_bytes(),
-    )
-    .to_string();
-
-    RecordedEvent {
-        id,
-        stream_id,
-        revision: event.stream_revision,
-        position,
-        event_type,
-        is_json,
-        created,
-        metadata: event.metadata,
-        custom_metadata: event.custom_metadata,
-        data: event.data,
-    }
-}
-
-fn convert_persistent_proto_recorded_event(
-    event: persistent::read_resp::read_event::RecordedEvent,
-) -> RecordedEvent {
-    let id = event
-        .id
-        .map(raw_persistent_uuid_to_uuid)
-        .expect("Unable to parse Uuid [convert_persistent_proto_recorded_event]");
-
-    let position = Position {
-        commit: event.commit_position,
-        prepare: event.prepare_position,
-    };
-
-    let event_type = if let Some(tpe) = event.metadata.get("type") {
-        tpe.to_string()
-    } else {
-        "<no-event-type-provided>".to_owned()
-    };
-
-    let created: DateTime<Utc> = if let Some(ticks_since_epoch) = event.metadata.get("created") {
-        let ticks_since_epoch = ticks_since_epoch.parse::<u64>().unwrap_or(0);
-        let secs_since_epoch = ticks_since_epoch / 10_000_000;
-
-        SystemTime::UNIX_EPOCH
-            .add(Duration::from_secs(secs_since_epoch))
-            .into()
-    } else {
-        SystemTime::UNIX_EPOCH.into()
-    };
-
-    let is_json = if let Some(content_type) = event.metadata.get("content-type") {
-        matches!(content_type.as_str(), "application/json")
-    } else {
-        false
-    };
-
-    let stream_id = String::from_utf8_lossy(
-        event
-            .stream_identifier
-            .expect("stream_identifier is always defined")
-            .stream_name
-            .as_bytes(),
-    )
-    .to_string();
-
-    RecordedEvent {
-        id,
-        stream_id,
-        revision: event.stream_revision,
-        position,
-        event_type,
-        is_json,
-        created,
-        metadata: event.metadata,
-        custom_metadata: event.custom_metadata,
-        data: event.data,
-    }
-}
 
 fn convert_event_data_to_batch_proposed_message(
     event: EventData,
 ) -> streams::batch_append_req::ProposedMessage {
     use streams::batch_append_req;
 
-    let id = event.id_opt.unwrap_or_else(uuid::Uuid::new_v4);
-    let id = shared::uuid::Value::String(id.to_string());
-    let id = Uuid { value: Some(id) };
+    let id = event.id_opt.unwrap_or_else(uuid::Uuid::new_v4).into();
     let custom_metadata = event.custom_metadata.unwrap_or_default();
 
     batch_append_req::ProposedMessage {
@@ -267,165 +75,13 @@ impl PsPosition for Position {
     }
 }
 
-fn ps_to_deprecated_revision_value<A>(value: StreamPosition<A>) -> u64
-where
-    A: PsPosition,
-{
-    match value {
-        StreamPosition::Start => 0,
-        StreamPosition::End => u64::MAX,
-        StreamPosition::Position(value) => value.to_deprecated_value().unwrap_or(0),
-    }
-}
-
-fn convert_settings_create<A>(
-    settings: &PersistentSubscriptionSettings<A>,
-) -> crate::Result<persistent::create_req::Settings>
-where
-    A: PsPosition,
-{
-    let named_consumer_strategy = match settings.consumer_strategy_name {
-        SystemConsumerStrategy::DispatchToSingle => 0,
-        SystemConsumerStrategy::RoundRobin => 1,
-        SystemConsumerStrategy::Pinned => 2,
-        SystemConsumerStrategy::Custom(_) | SystemConsumerStrategy::PinnedByCorrelation => {
-            // Currently unsupported by all released servers.
-            return Err(crate::Error::UnsupportedFeature);
-        }
-    };
-
-    let deprecated_revision_value = ps_to_deprecated_revision_value(settings.start_from);
-    let consumer_strategy = settings.consumer_strategy_name.to_string();
-
-    #[allow(deprecated)]
-    let settings = persistent::create_req::Settings {
-        resolve_links: settings.resolve_link_tos,
-        revision: deprecated_revision_value,
-        extra_statistics: settings.extra_statistics,
-        message_timeout: Some(
-            persistent::create_req::settings::MessageTimeout::MessageTimeoutMs(
-                settings.message_timeout.as_millis() as i32,
-            ),
-        ),
-        max_retry_count: settings.max_retry_count,
-        checkpoint_after: Some(
-            persistent::create_req::settings::CheckpointAfter::CheckpointAfterMs(
-                settings.checkpoint_after.as_millis() as i32,
-            ),
-        ),
-        min_checkpoint_count: settings.checkpoint_lower_bound,
-        max_checkpoint_count: settings.checkpoint_upper_bound,
-        max_subscriber_count: settings.max_subscriber_count,
-        live_buffer_size: settings.live_buffer_size,
-        read_batch_size: settings.read_batch_size,
-        history_buffer_size: settings.history_buffer_size,
-        named_consumer_strategy,
-        consumer_strategy,
-    };
-
-    Ok(settings)
-}
-
-fn convert_settings_update<A>(
-    settings: &PersistentSubscriptionSettings<A>,
-) -> crate::Result<persistent::update_req::Settings>
-where
-    A: PsPosition,
-{
-    let named_consumer_strategy = match settings.consumer_strategy_name {
-        SystemConsumerStrategy::DispatchToSingle => 0,
-        SystemConsumerStrategy::RoundRobin => 1,
-        SystemConsumerStrategy::Pinned => 2,
-        SystemConsumerStrategy::Custom(_) | SystemConsumerStrategy::PinnedByCorrelation => {
-            // Currently unsupported by all released servers.
-            return Err(crate::Error::UnsupportedFeature);
-        }
-    };
-
-    let deprecated_revision_value = ps_to_deprecated_revision_value(settings.start_from);
-
-    #[allow(deprecated)]
-    let settings = persistent::update_req::Settings {
-        resolve_links: settings.resolve_link_tos,
-        revision: deprecated_revision_value,
-        extra_statistics: settings.extra_statistics,
-        message_timeout: Some(
-            persistent::update_req::settings::MessageTimeout::MessageTimeoutMs(
-                settings.message_timeout.as_millis() as i32,
-            ),
-        ),
-        max_retry_count: settings.max_retry_count,
-        checkpoint_after: Some(
-            persistent::update_req::settings::CheckpointAfter::CheckpointAfterMs(
-                settings.checkpoint_after.as_millis() as i32,
-            ),
-        ),
-        min_checkpoint_count: settings.checkpoint_lower_bound,
-        max_checkpoint_count: settings.checkpoint_upper_bound,
-        max_subscriber_count: settings.max_subscriber_count,
-        live_buffer_size: settings.live_buffer_size,
-        read_batch_size: settings.read_batch_size,
-        history_buffer_size: settings.history_buffer_size,
-        named_consumer_strategy,
-    };
-
-    Ok(settings)
-}
-
-fn convert_proto_read_event(event: streams::read_resp::ReadEvent) -> ResolvedEvent {
-    let commit_position = if let Some(pos_alt) = event.position {
-        match pos_alt {
-            streams::read_resp::read_event::Position::CommitPosition(pos) => Some(pos),
-            streams::read_resp::read_event::Position::NoPosition(_) => None,
-        }
-    } else {
-        None
-    };
-
-    ResolvedEvent {
-        event: event.event.map(convert_proto_recorded_event),
-        link: event.link.map(convert_proto_recorded_event),
-        commit_position,
-    }
-}
-
-fn convert_persistent_proto_read_event(
-    event: persistent::read_resp::ReadEvent,
-) -> PersistentSubscriptionEvent {
-    use persistent::read_resp::read_event::Count;
-    let commit_position = if let Some(pos_alt) = event.position {
-        match pos_alt {
-            persistent::read_resp::read_event::Position::CommitPosition(pos) => Some(pos),
-            persistent::read_resp::read_event::Position::NoPosition(_) => None,
-        }
-    } else {
-        None
-    };
-
-    let resolved = ResolvedEvent {
-        event: event.event.map(convert_persistent_proto_recorded_event),
-        link: event.link.map(convert_persistent_proto_recorded_event),
-        commit_position,
-    };
-
-    let retry_count = event.count.map_or(0usize, |repr| match repr {
-        Count::RetryCount(count) => count as usize,
-        Count::NoRetryCount(_) => 0,
-    });
-
-    PersistentSubscriptionEvent::EventAppeared {
-        retry_count,
-        event: resolved,
-    }
-}
-
 pub fn filter_into_proto(filter: SubscriptionFilter) -> streams::read_req::options::FilterOptions {
     use options::filter_options::{Expression, Filter, Window};
     use streams::read_req::options::{self, FilterOptions};
 
     let window = match filter.max {
         Some(max) => Window::Max(max),
-        None => Window::Count(Empty {}),
+        None => Window::Count(()),
     };
 
     let expr = Expression {
@@ -454,7 +110,7 @@ pub fn ps_create_filter_into_proto(
 
     let window = match filter.max {
         Some(max) => Window::Max(max),
-        None => Window::Count(Empty {}),
+        None => Window::Count(()),
     };
 
     let expr = Expression {
@@ -505,16 +161,15 @@ where
 /// Sends asynchronously the write command to the server.
 pub async fn append_to_stream(
     connection: &GrpcClient,
-    stream: impl AsRef<str>,
+    stream: impl StreamName,
     options: &AppendToStreamOptions,
     events: impl Iterator<Item = EventData> + Send + 'static,
 ) -> crate::Result<WriteResult> {
     use streams::append_req::{self, Content};
     use streams::AppendReq;
 
-    let stream = stream.as_ref().to_string();
     let stream_identifier = Some(StreamIdentifier {
-        stream_name: stream.into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     });
     let header = Content::Options(append_req::Options {
         stream_identifier,
@@ -528,7 +183,7 @@ pub async fn append_to_stream(
         yield header;
 
         for event in events {
-            yield convert_event_data(event);
+            yield event.into();
         }
     };
 
@@ -548,44 +203,8 @@ pub async fn append_to_stream(
     };
 
     match resp.result.unwrap() {
-        streams::append_resp::Result::Success(success) => {
-            let next_expected_version = match success.current_revision_option.unwrap() {
-                streams::append_resp::success::CurrentRevisionOption::CurrentRevision(rev) => rev,
-                streams::append_resp::success::CurrentRevisionOption::NoStream(_) => 0,
-            };
-
-            let position = match success.position_option.unwrap() {
-                streams::append_resp::success::PositionOption::Position(pos) => Position {
-                    commit: pos.commit_position,
-                    prepare: pos.prepare_position,
-                },
-
-                streams::append_resp::success::PositionOption::NoPosition(_) => Position::start(),
-            };
-
-            let write_result = WriteResult {
-                next_expected_version,
-                position,
-            };
-
-            Ok(write_result)
-        }
-
-        streams::append_resp::Result::WrongExpectedVersion(error) => {
-            let current = match error.current_revision_option.unwrap() {
-                streams::append_resp::wrong_expected_version::CurrentRevisionOption::CurrentRevision(rev) => CurrentRevision::Current(rev),
-                streams::append_resp::wrong_expected_version::CurrentRevisionOption::CurrentNoStream(_) => CurrentRevision::NoStream,
-            };
-
-            let expected = match error.expected_revision_option.unwrap() {
-                streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedRevision(rev) => ExpectedRevision::Exact(rev),
-                streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedAny(_) => ExpectedRevision::Any,
-                streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedStreamExists(_) => ExpectedRevision::StreamExists,
-                streams::append_resp::wrong_expected_version::ExpectedRevisionOption::ExpectedNoStream(_) => ExpectedRevision::NoStream,
-            };
-
-            Err(crate::Error::WrongExpectedVersion { current, expected })
-        }
+        streams::append_resp::Result::Success(success) => Ok(success.into()),
+        streams::append_resp::Result::WrongExpectedVersion(error) => Err(error.into()),
     }
 }
 
@@ -594,7 +213,10 @@ pub async fn batch_append(
     options: &BatchAppendOptions,
 ) -> crate::Result<BatchAppendClient> {
     use streams::{
-        batch_append_req::{options::ExpectedStreamPosition, Options, ProposedMessage},
+        batch_append_req::{
+            options::{DeadlineOption, ExpectedStreamPosition},
+            Options, ProposedMessage,
+        },
         batch_append_resp::{
             self,
             success::{CurrentRevisionOption, PositionOption},
@@ -617,10 +239,7 @@ pub async fn batch_append(
     let common_operation_options = options.common_operation_options.clone();
     let receiver = async_stream::stream! {
         while let Some(req) = receiver.recv().await {
-            let correlation_id = shared::uuid::Value::String(req.id.to_string());
-            let correlation_id = Some(Uuid {
-                value: Some(correlation_id),
-            });
+            let correlation_id = Some(req.id.into());
             let stream_identifier = Some(StreamIdentifier {
                 stream_name: req.stream_name.into_bytes().into(),
             });
@@ -649,10 +268,11 @@ pub async fn batch_append(
 
             let options = Some(Options {
                 stream_identifier,
-                deadline: Some(Timestamp {
+                deadline_option: Some(DeadlineOption::Deadline(
+                    prost_types::Duration {
                     seconds: deadline.as_secs() as i64,
                     nanos: deadline.subsec_nanos() as i32,
-                }),
+                })),
                 expected_stream_position,
             });
 
@@ -683,7 +303,7 @@ pub async fn batch_append(
                     )
                     .to_string();
 
-                    let correlation_id = raw_uuid_to_uuid(resp.correlation_id.unwrap());
+                    let correlation_id = resp.correlation_id.unwrap().try_into().unwrap();
                     let result = match resp.result.unwrap() {
                         batch_append_resp::Result::Success(success) => {
                             let current_revision =
@@ -807,7 +427,7 @@ impl ReadStream {
                                 return Err(crate::Error::ResourceNotFound)
                             }
                             streams::read_resp::Content::Event(event) => {
-                                return Ok(Some(ReadEvent::Event(convert_proto_read_event(event))))
+                                return Ok(Some(ReadEvent::Event(event.into())))
                             }
 
                             streams::read_resp::Content::FirstStreamPosition(event_number) => {
@@ -846,10 +466,10 @@ impl ReadStream {
 }
 
 /// Sends asynchronously the read command to the server.
-pub async fn read_stream<S: AsRef<str>>(
+pub async fn read_stream(
     connection: GrpcClient,
     options: &ReadStreamOptions,
-    stream: S,
+    stream: impl StreamName,
     count: u64,
 ) -> crate::Result<ReadStream> {
     use streams::read_req::options::stream_options::RevisionOption;
@@ -863,12 +483,12 @@ pub async fn read_stream<S: AsRef<str>>(
 
     let revision_option = match options.position {
         StreamPosition::Position(rev) => RevisionOption::Revision(rev),
-        StreamPosition::Start => RevisionOption::Start(Empty {}),
-        StreamPosition::End => RevisionOption::End(Empty {}),
+        StreamPosition::Start => RevisionOption::Start(()),
+        StreamPosition::End => RevisionOption::End(()),
     };
 
     let stream_identifier = Some(StreamIdentifier {
-        stream_name: stream.as_ref().to_string().into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     });
     let stream_options = StreamOptions {
         stream_identifier,
@@ -876,13 +496,13 @@ pub async fn read_stream<S: AsRef<str>>(
     };
 
     let uuid_option = options::UuidOption {
-        content: Some(options::uuid_option::Content::String(Empty {})),
+        content: Some(options::uuid_option::Content::String(())),
     };
 
     let req_options = Options {
         stream_option: Some(StreamOption::Stream(stream_options)),
         resolve_links: options.resolve_link_tos,
-        filter_option: Some(options::FilterOption::NoFilter(Empty {})),
+        filter_option: Some(options::FilterOption::NoFilter(())),
         count_option: Some(options::CountOption::Count(count)),
         uuid_option: Some(uuid_option),
         control_option: Some(options::ControlOption { compatibility: 1 }),
@@ -938,8 +558,8 @@ pub async fn read_all(
             AllOption::Position(pos)
         }
 
-        StreamPosition::Start => AllOption::Start(Empty {}),
-        StreamPosition::End => AllOption::End(Empty {}),
+        StreamPosition::Start => AllOption::Start(()),
+        StreamPosition::End => AllOption::End(()),
     };
 
     let stream_options = AllOptions {
@@ -947,13 +567,13 @@ pub async fn read_all(
     };
 
     let uuid_option = options::UuidOption {
-        content: Some(options::uuid_option::Content::String(Empty {})),
+        content: Some(options::uuid_option::Content::String(())),
     };
 
     let req_options = Options {
         stream_option: Some(StreamOption::All(stream_options)),
         resolve_links: options.resolve_link_tos,
-        filter_option: Some(options::FilterOption::NoFilter(Empty {})),
+        filter_option: Some(options::FilterOption::NoFilter(())),
         count_option: Some(options::CountOption::Count(count)),
         uuid_option: Some(uuid_option),
         control_option: None,
@@ -986,9 +606,9 @@ pub async fn read_all(
 }
 
 /// Sends asynchronously the delete command to the server.
-pub async fn delete_stream<S: AsRef<str>>(
+pub async fn delete_stream(
     connection: &GrpcClient,
-    stream: S,
+    stream: impl StreamName,
     options: &DeleteStreamOptions,
 ) -> crate::Result<Option<Position>> {
     use streams::delete_req::options::ExpectedStreamRevision;
@@ -996,15 +616,15 @@ pub async fn delete_stream<S: AsRef<str>>(
     use streams::delete_resp::PositionOption;
 
     let expected_stream_revision = match options.version {
-        ExpectedRevision::Any => ExpectedStreamRevision::Any(Empty {}),
-        ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(Empty {}),
-        ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(Empty {}),
+        ExpectedRevision::Any => ExpectedStreamRevision::Any(()),
+        ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(()),
+        ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(()),
         ExpectedRevision::Exact(rev) => ExpectedStreamRevision::Revision(rev),
     };
 
     let expected_stream_revision = Some(expected_stream_revision);
     let stream_identifier = Some(StreamIdentifier {
-        stream_name: stream.as_ref().to_string().into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     });
     let req_options = Options {
         stream_identifier,
@@ -1045,9 +665,9 @@ pub async fn delete_stream<S: AsRef<str>>(
 }
 
 /// Sends asynchronously the tombstone command to the server.
-pub async fn tombstone_stream<S: AsRef<str>>(
+pub async fn tombstone_stream(
     connection: &GrpcClient,
-    stream: S,
+    stream: impl StreamName,
     options: &TombstoneStreamOptions,
 ) -> crate::Result<Option<Position>> {
     use streams::tombstone_req::options::ExpectedStreamRevision;
@@ -1055,15 +675,15 @@ pub async fn tombstone_stream<S: AsRef<str>>(
     use streams::tombstone_resp::PositionOption;
 
     let expected_stream_revision = match options.version {
-        ExpectedRevision::Any => ExpectedStreamRevision::Any(Empty {}),
-        ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(Empty {}),
-        ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(Empty {}),
+        ExpectedRevision::Any => ExpectedStreamRevision::Any(()),
+        ExpectedRevision::NoStream => ExpectedStreamRevision::NoStream(()),
+        ExpectedRevision::StreamExists => ExpectedStreamRevision::StreamExists(()),
         ExpectedRevision::Exact(rev) => ExpectedStreamRevision::Revision(rev),
     };
 
     let expected_stream_revision = Some(expected_stream_revision);
     let stream_identifier = Some(StreamIdentifier {
-        stream_name: stream.as_ref().to_string().into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     });
     let req_options = Options {
         stream_identifier,
@@ -1176,7 +796,7 @@ impl Subscription {
                         if let Some(content) = resp.and_then(|r| r.content) {
                             match content {
                                 streams::read_resp::Content::Event(event) => {
-                                    let event = convert_proto_read_event(event);
+                                    let event: ResolvedEvent = event.into();
 
                                     let stream_options =
                                         self.options.stream_option.as_mut().unwrap();
@@ -1232,6 +852,14 @@ impl Subscription {
                                         commit: position.commit_position,
                                         prepare: position.prepare_position,
                                     }));
+                                }
+
+                                streams::read_resp::Content::CaughtUp(_) => {
+                                    return Ok(SubscriptionEvent::CaughtUp);
+                                }
+
+                                streams::read_resp::Content::FellBehind(_) => {
+                                    return Ok(SubscriptionEvent::FellBehind);
                                 }
 
                                 _ => unreachable!(),
@@ -1297,9 +925,9 @@ impl Subscription {
 }
 
 /// Runs the subscription command.
-pub fn subscribe_to_stream<S: AsRef<str>>(
+pub fn subscribe_to_stream(
     connection: GrpcClient,
-    stream_id: S,
+    stream_id: impl StreamName,
     options: &SubscribeToStreamOptions,
 ) -> Subscription {
     use streams::read_req::options::stream_options::RevisionOption;
@@ -1310,13 +938,13 @@ pub fn subscribe_to_stream<S: AsRef<str>>(
     let read_direction = 0; // <- Going forward.
 
     let revision = match options.position {
-        StreamPosition::Start => RevisionOption::Start(Empty {}),
-        StreamPosition::End => RevisionOption::End(Empty {}),
+        StreamPosition::Start => RevisionOption::Start(()),
+        StreamPosition::End => RevisionOption::End(()),
         StreamPosition::Position(revision) => RevisionOption::Revision(revision),
     };
 
     let stream_identifier = Some(StreamIdentifier {
-        stream_name: stream_id.as_ref().to_string().into_bytes().into(),
+        stream_name: stream_id.into_stream_name(),
     });
     let stream_options = StreamOptions {
         stream_identifier,
@@ -1324,13 +952,13 @@ pub fn subscribe_to_stream<S: AsRef<str>>(
     };
 
     let uuid_option = options::UuidOption {
-        content: Some(options::uuid_option::Content::String(Empty {})),
+        content: Some(options::uuid_option::Content::String(())),
     };
 
     let req_options = Options {
         stream_option: Some(StreamOption::Stream(stream_options)),
         resolve_links: options.resolve_link_tos,
-        filter_option: Some(options::FilterOption::NoFilter(Empty {})),
+        filter_option: Some(options::FilterOption::NoFilter(())),
         count_option: Some(options::CountOption::Subscription(SubscriptionOptions {})),
         uuid_option: Some(uuid_option),
         control_option: None,
@@ -1353,12 +981,12 @@ pub fn subscribe_to_all(connection: GrpcClient, options: &SubscribeToAllOptions)
     let read_direction = 0; // <- Going forward.
 
     let revision = match options.position {
-        StreamPosition::Start => AllOption::Start(Empty {}),
+        StreamPosition::Start => AllOption::Start(()),
         StreamPosition::Position(pos) => AllOption::Position(options::Position {
             prepare_position: pos.prepare,
             commit_position: pos.commit,
         }),
-        StreamPosition::End => AllOption::End(Empty {}),
+        StreamPosition::End => AllOption::End(()),
     };
 
     let stream_options = AllOptions {
@@ -1366,12 +994,12 @@ pub fn subscribe_to_all(connection: GrpcClient, options: &SubscribeToAllOptions)
     };
 
     let uuid_option = options::UuidOption {
-        content: Some(options::uuid_option::Content::String(Empty {})),
+        content: Some(options::uuid_option::Content::String(())),
     };
 
     let filter_option = match options.filter.as_ref() {
         Some(filter) => options::FilterOption::Filter(filter_into_proto(filter.clone())),
-        None => options::FilterOption::NoFilter(Empty {}),
+        None => options::FilterOption::NoFilter(()),
     };
 
     let req_options = Options {
@@ -1425,8 +1053,8 @@ impl PsSettings for PersistentSubscriptionOptions {
         };
 
         let revision_option = match self.setts.start_from {
-            StreamPosition::Start => RevisionOption::Start(Empty {}),
-            StreamPosition::End => RevisionOption::End(Empty {}),
+            StreamPosition::Start => RevisionOption::Start(()),
+            StreamPosition::End => RevisionOption::End(()),
             StreamPosition::Position(rev) => RevisionOption::Revision(rev),
         };
 
@@ -1445,8 +1073,8 @@ impl PsSettings for PersistentSubscriptionOptions {
         };
 
         let revision_option = match self.setts.start_from {
-            StreamPosition::Start => RevisionOption::Start(Empty {}),
-            StreamPosition::End => RevisionOption::End(Empty {}),
+            StreamPosition::Start => RevisionOption::Start(()),
+            StreamPosition::End => RevisionOption::End(()),
             StreamPosition::Position(rev) => RevisionOption::Revision(rev),
         };
 
@@ -1477,12 +1105,12 @@ impl PsSettings for PersistentSubscriptionToAllOptions {
 
         let filter_option = match self.filter.as_ref() {
             Some(filter) => all_options::FilterOption::Filter(ps_create_filter_into_proto(filter)),
-            None => all_options::FilterOption::NoFilter(Empty {}),
+            None => all_options::FilterOption::NoFilter(()),
         };
 
         let all_option = match self.setts.start_from {
-            StreamPosition::Start => AllOption::Start(Empty {}),
-            StreamPosition::End => AllOption::End(Empty {}),
+            StreamPosition::Start => AllOption::Start(()),
+            StreamPosition::End => AllOption::End(()),
             StreamPosition::Position(pos) => AllOption::Position(create_req::Position {
                 commit_position: pos.commit,
                 prepare_position: pos.prepare,
@@ -1504,8 +1132,8 @@ impl PsSettings for PersistentSubscriptionToAllOptions {
         };
 
         let all_option = match self.setts.start_from {
-            StreamPosition::Start => AllOption::Start(Empty {}),
-            StreamPosition::End => AllOption::End(Empty {}),
+            StreamPosition::Start => AllOption::Start(()),
+            StreamPosition::End => AllOption::End(()),
             StreamPosition::Position(pos) => AllOption::Position(update_req::Position {
                 commit_position: pos.commit,
                 prepare_position: pos.prepare,
@@ -1520,7 +1148,7 @@ impl PsSettings for PersistentSubscriptionToAllOptions {
 
 pub(crate) async fn create_persistent_subscription<S: AsRef<str>, Options>(
     connection: &GrpcClient,
-    stream: S,
+    stream: impl StreamName,
     group: S,
     options: &Options,
 ) -> crate::Result<()>
@@ -1531,9 +1159,9 @@ where
     use persistent::CreateReq;
 
     let handle = connection.current_selected_node().await?;
-    let settings = convert_settings_create(options.settings())?;
+    let settings = options.settings().try_into()?;
     let stream_identifier = StreamIdentifier {
-        stream_name: stream.as_ref().to_string().into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     };
 
     let req_options = options.to_create_options(stream_identifier.clone());
@@ -1574,7 +1202,7 @@ where
 
 pub(crate) async fn update_persistent_subscription<S: AsRef<str>, Options>(
     connection: &GrpcClient,
-    stream: S,
+    stream: impl StreamName,
     group: S,
     options: &Options,
 ) -> crate::Result<()>
@@ -1585,9 +1213,9 @@ where
     use persistent::UpdateReq;
 
     let handle = connection.current_selected_node().await?;
-    let settings = convert_settings_update(options.settings())?;
+    let settings = options.settings().try_into()?;
     let stream_identifier = StreamIdentifier {
-        stream_name: stream.as_ref().to_string().into_bytes().into(),
+        stream_name: stream.into_stream_name(),
     };
 
     let req_options = options.to_update_options(stream_identifier.clone());
@@ -1627,7 +1255,7 @@ where
 
 pub async fn delete_persistent_subscription<S: AsRef<str>>(
     connection: &GrpcClient,
-    stream_id: S,
+    stream_id: impl StreamName,
     group_name: S,
     options: &DeletePersistentSubscriptionOptions,
     to_all: bool,
@@ -1642,10 +1270,10 @@ pub async fn delete_persistent_subscription<S: AsRef<str>>(
 
     let stream_option = if !to_all {
         StreamOption::StreamIdentifier(StreamIdentifier {
-            stream_name: stream_id.as_ref().to_string().into_bytes().into(),
+            stream_name: stream_id.into_stream_name(),
         })
     } else {
-        StreamOption::All(Empty {})
+        StreamOption::All(())
     };
 
     let stream_option = Some(stream_option);
@@ -1677,7 +1305,7 @@ pub async fn delete_persistent_subscription<S: AsRef<str>>(
 /// asynchronously even if the subscription is available right away.
 pub async fn subscribe_to_persistent_subscription<S: AsRef<str>>(
     connection: &GrpcClient,
-    stream_id: S,
+    stream_id: impl StreamName,
     group_name: S,
     options: &SubscribeToPersistentSubscriptionOptions,
     to_all: bool,
@@ -1700,15 +1328,15 @@ pub async fn subscribe_to_persistent_subscription<S: AsRef<str>>(
     };
 
     let uuid_option = UuidOption {
-        content: Some(options::uuid_option::Content::String(Empty {})),
+        content: Some(options::uuid_option::Content::String(())),
     };
 
     let stream_option = if !to_all {
         StreamOption::StreamIdentifier(StreamIdentifier {
-            stream_name: stream_id.as_ref().to_string().into_bytes().into(),
+            stream_name: stream_id.into_stream_name(),
         })
     } else {
-        StreamOption::All(Empty {})
+        StreamOption::All(())
     };
 
     let stream_option = Some(stream_option);
@@ -1727,8 +1355,6 @@ pub async fn subscribe_to_persistent_subscription<S: AsRef<str>>(
     let req = new_request(connection.connection_settings(), options, recv);
 
     let _ = sender.send(read_req).await;
-    let stream_id = stream_id.as_ref().to_string();
-    let group_name = group_name.as_ref().to_string();
     let channel_id = handle.id();
     let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
 
@@ -1744,8 +1370,6 @@ pub async fn subscribe_to_persistent_subscription<S: AsRef<str>>(
             ack_sender: sender,
             channel_id,
             inner: resp.into_inner(),
-            stream_id,
-            group_name,
         }),
     }
 }
@@ -1755,8 +1379,6 @@ pub struct PersistentSubscription {
     ack_sender: mpsc::Sender<crate::event_store::client::persistent::ReadReq>,
     channel_id: uuid::Uuid,
     inner: tonic::Streaming<crate::event_store::client::persistent::ReadResp>,
-    stream_id: String,
-    group_name: String,
 }
 
 impl PersistentSubscription {
@@ -1768,12 +1390,9 @@ impl PersistentSubscription {
                     .get("exception")
                     .and_then(|e| e.to_str().ok())
                 {
-                    let message = format!(
-                        "Persistent subscription on '{}' and group '{}' has dropped",
-                        self.stream_id, self.group_name,
-                    );
-
-                    return Err(crate::Error::IllegalStateError(message));
+                    return Err(crate::Error::IllegalStateError(
+                        "Persistent subscription has dropped".to_string(),
+                    ));
                 }
 
                 let e = crate::Error::from_grpc(status);
@@ -1783,17 +1402,7 @@ impl PersistentSubscription {
             }
             Ok(resp) => {
                 if let Some(content) = resp.and_then(|r| r.content) {
-                    match content {
-                        crate::event_store::client::persistent::read_resp::Content::Event(
-                            event,
-                        ) => {
-                            return Ok(convert_persistent_proto_read_event(event));
-                        }
-
-                        crate::event_store::client::persistent::read_resp::Content::SubscriptionConfirmation(sub) => {
-                            return Ok(PersistentSubscriptionEvent::Confirmed(sub.subscription_id));
-                        }
-                    }
+                    return Ok(content.into());
                 }
 
                 unreachable!()
@@ -1822,7 +1431,7 @@ impl PersistentSubscription {
         use persistent::read_req::{Ack, Content};
         use persistent::ReadReq;
 
-        let ids = event_ids.into_iter().map(to_proto_uuid).collect();
+        let ids = event_ids.into_iter().map(|id| id.into()).collect();
         let ack = Ack {
             id: Vec::new(),
             ids,
@@ -1862,7 +1471,7 @@ impl PersistentSubscription {
         use persistent::read_req::{Content, Nack};
         use persistent::ReadReq;
 
-        let ids = event_ids.into_iter().map(to_proto_uuid).collect();
+        let ids = event_ids.into_iter().map(|id| id.into()).collect();
 
         let action = match action {
             NakAction::Unknown => 0,
@@ -1891,12 +1500,6 @@ impl PersistentSubscription {
         })
     }
 }
-fn to_proto_uuid(id: uuid::Uuid) -> Uuid {
-    Uuid {
-        value: Some(shared::uuid::Value::String(format!("{}", id))),
-    }
-}
-
 pub(crate) struct RegularStream(pub(crate) String);
 pub(crate) struct AllStream;
 pub(crate) struct BothTypeOfStream;
@@ -1981,7 +1584,7 @@ pub async fn list_all_persistent_subscriptions(
         .await;
     }
 
-    let list_option = list_req::options::ListOption::ListAllSubscriptions(Empty {});
+    let list_option = list_req::options::ListOption::ListAllSubscriptions(());
 
     internal_list_persistent_subscriptions(
         connection.connection_settings(),
@@ -2024,7 +1627,7 @@ where
     }
 
     let stream_option = if stream_name.is_all() {
-        list_req::stream_option::StreamOption::All(Empty {})
+        list_req::stream_option::StreamOption::All(())
     } else {
         list_req::stream_option::StreamOption::Stream(StreamIdentifier {
             stream_name: stream_name.name().to_string().into_bytes().into(),
@@ -2081,161 +1684,13 @@ where
             let resp = resp.into_inner();
             let mut infos = Vec::with_capacity(resp.subscriptions.capacity());
 
-            for sub in resp.subscriptions {
-                infos.push(subscription_info_from_wire(&selector, sub)?);
+            for info in resp.subscriptions {
+                let sub: PersistentSubscriptionInfo<RevisionOrPosition> = info.try_into()?;
+                infos.push(sub.map(|i| selector.select(i)));
             }
 
             Ok(infos)
         }
-    }
-}
-
-fn parse_position_start_from(input: &str) -> nom::IResult<&str, Position> {
-    use nom::bytes::complete::tag;
-
-    let (input, _) = tag("C:")(input)?;
-    let (input, commit) = nom::character::complete::u64(input)?;
-    let (input, _) = tag("/P:")(input)?;
-    let (input, prepare) = nom::character::complete::u64(input)?;
-
-    Ok((input, Position { commit, prepare }))
-}
-
-pub(crate) fn parse_revision_or_position(input: &str) -> crate::Result<RevisionOrPosition> {
-    if let Ok(v) = input.parse::<u64>() {
-        Ok(RevisionOrPosition::Revision(v))
-    } else if let Ok(pos) = parse_position(input) {
-        Ok(RevisionOrPosition::Position(pos))
-    } else {
-        Err(crate::Error::InternalParsingError(format!(
-            "Failed to parse either a stream revision or a transaction log position: '{}'",
-            input
-        )))
-    }
-}
-
-pub(crate) fn parse_position(input: &str) -> crate::Result<Position> {
-    if let Ok((_, pos)) = nom::combinator::complete(parse_position_start_from)(input) {
-        Ok(pos)
-    } else {
-        Err(crate::Error::InternalParsingError(format!(
-            "Failed to parse a transaction log position: '{}'",
-            input
-        )))
-    }
-}
-
-pub(crate) fn parse_stream_position(
-    input: &str,
-) -> crate::Result<StreamPosition<RevisionOrPosition>> {
-    if input == "-1" || input == "C:-1/P:-1" {
-        return Ok(StreamPosition::End);
-    } else if input == "0" || input == "C:0/P:0" {
-        return Ok(StreamPosition::Start);
-    }
-
-    Ok(StreamPosition::Position(parse_revision_or_position(input)?))
-}
-
-fn subscription_info_from_wire<Selector>(
-    selector: &Selector,
-    info: crate::event_store::generated::persistent::SubscriptionInfo,
-) -> crate::Result<PersistentSubscriptionInfo<<Selector as StreamPositionTypeSelector>::Value>>
-where
-    Selector: StreamPositionTypeSelector,
-{
-    let named_consumer_strategy = SystemConsumerStrategy::from_string(info.named_consumer_strategy);
-    let connections = info
-        .connections
-        .into_iter()
-        .map(connection_from_wire)
-        .collect();
-    let status = info.status;
-    let mut last_known_position = None;
-    let mut last_known_event_number = None;
-    let mut last_processed_event_number = None;
-    let mut last_processed_position = None;
-
-    if let Ok(value) = parse_revision_or_position(info.last_known_event_position.as_str()) {
-        match value {
-            RevisionOrPosition::Position(p) => last_known_position = Some(p),
-            RevisionOrPosition::Revision(r) => last_known_event_number = Some(r),
-        }
-    }
-
-    if let Ok(value) = parse_revision_or_position(info.last_checkpointed_event_position.as_str()) {
-        match value {
-            RevisionOrPosition::Position(p) => last_processed_position = Some(p),
-            RevisionOrPosition::Revision(r) => last_processed_event_number = Some(r),
-        }
-    }
-    let start_from = if let Ok(pos) = parse_stream_position(info.start_from.as_str()) {
-        pos.map(|p| selector.select(p))
-    } else {
-        return Err(crate::Error::InternalParsingError(format!(
-            "Can't parse stream position: {}",
-            info.start_from
-        )));
-    };
-
-    let stats = PersistentSubscriptionStats {
-        average_per_second: info.average_per_second as f64,
-        total_items: info.total_items as usize,
-        count_since_last_measurement: info.count_since_last_measurement as usize,
-        last_checkpointed_event_revision: last_processed_event_number,
-        last_known_event_revision: last_known_event_number,
-        last_checkpointed_position: last_processed_position,
-        last_known_position,
-        read_buffer_count: info.read_buffer_count as usize,
-        live_buffer_count: info.live_buffer_count as usize,
-        retry_buffer_count: info.retry_buffer_count as usize,
-        total_in_flight_messages: info.total_in_flight_messages as usize,
-        outstanding_messages_count: info.outstanding_messages_count as usize,
-        parked_message_count: info.parked_message_count as usize,
-    };
-
-    Ok(PersistentSubscriptionInfo {
-        event_source: info.event_source,
-        group_name: info.group_name,
-        status,
-        connections,
-        settings: Some(PersistentSubscriptionSettings {
-            resolve_link_tos: info.resolve_link_tos,
-            start_from,
-            extra_statistics: info.extra_statistics,
-            message_timeout: Duration::from_millis(info.message_timeout_milliseconds as u64),
-            max_retry_count: info.max_retry_count,
-            live_buffer_size: info.live_buffer_size,
-            read_batch_size: info.read_batch_size,
-            history_buffer_size: info.buffer_size,
-            checkpoint_after: Duration::from_millis(info.check_point_after_milliseconds as u64),
-            checkpoint_lower_bound: info.min_check_point_count,
-            checkpoint_upper_bound: info.max_check_point_count,
-            max_subscriber_count: info.max_subscriber_count,
-            consumer_strategy_name: named_consumer_strategy,
-        }),
-        stats,
-    })
-}
-
-fn connection_from_wire(
-    conn: crate::event_store::generated::persistent::subscription_info::ConnectionInfo,
-) -> PersistentSubscriptionConnectionInfo {
-    PersistentSubscriptionConnectionInfo {
-        from: conn.from,
-        username: conn.username,
-        average_items_per_second: conn.average_items_per_second as f64,
-        total_items: conn.total_items as usize,
-        count_since_last_measurement: conn.count_since_last_measurement as usize,
-        available_slots: conn.available_slots as usize,
-        in_flight_messages: conn.in_flight_messages as usize,
-        connection_name: conn.connection_name,
-        extra_statistics: PersistentSubscriptionMeasurements(
-            conn.observed_measurements
-                .into_iter()
-                .map(|m| (m.key, m.value))
-                .collect(),
-        ),
     }
 }
 
@@ -2272,7 +1727,7 @@ where
     }
 
     let stream_option = if stream_name.is_all() {
-        replay_parked_req::options::StreamOption::All(Empty {})
+        replay_parked_req::options::StreamOption::All(())
     } else {
         replay_parked_req::options::StreamOption::StreamIdentifier(StreamIdentifier {
             stream_name: stream_name.name().to_string().into_bytes().into(),
@@ -2282,7 +1737,7 @@ where
     let stop_at_option = if let Some(value) = op_options.stop_at {
         replay_parked_req::options::StopAtOption::StopAt(value as i64)
     } else {
-        replay_parked_req::options::StopAtOption::NoLimit(Empty {})
+        replay_parked_req::options::StopAtOption::NoLimit(())
     };
 
     let options = replay_parked_req::Options {
@@ -2340,7 +1795,7 @@ where
     }
 
     let stream_option = if stream_name.is_all() {
-        get_info_req::options::StreamOption::All(Empty {})
+        get_info_req::options::StreamOption::All(())
     } else {
         get_info_req::options::StreamOption::StreamIdentifier(StreamIdentifier {
             stream_name: stream_name.name().to_string().into_bytes().into(),
@@ -2370,7 +1825,8 @@ where
             let resp = resp.into_inner();
 
             if let Some(info) = resp.subscription_info {
-                subscription_info_from_wire(&stream_name, info)
+                let sub: PersistentSubscriptionInfo<RevisionOrPosition> = info.try_into()?;
+                Ok(sub.map(|i| stream_name.select(i)))
             } else {
                 Err(crate::Error::ResourceNotFound)
             }
@@ -2397,7 +1853,7 @@ pub async fn restart_persistent_subscription_subsystem(
 
     let id = handle.id();
     let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
-    let req = new_request(connection.connection_settings(), op_options, Empty {});
+    let req = new_request(connection.connection_settings(), op_options, ());
 
     if let Err(e) = client.restart_subsystem(req).await {
         let e = crate::Error::from_grpc(e);

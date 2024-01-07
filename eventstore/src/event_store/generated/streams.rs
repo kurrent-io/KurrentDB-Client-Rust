@@ -30,7 +30,8 @@ pub mod read_req {
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct StreamOptions {
             #[prost(message, optional, tag = "1")]
-            pub stream_identifier: ::core::option::Option<super::super::super::StreamIdentifier>,
+            pub stream_identifier:
+                ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
             #[prost(oneof = "stream_options::RevisionOption", tags = "2, 3, 4")]
             pub revision_option: ::core::option::Option<stream_options::RevisionOption>,
         }
@@ -42,9 +43,9 @@ pub mod read_req {
                 #[prost(uint64, tag = "2")]
                 Revision(u64),
                 #[prost(message, tag = "3")]
-                Start(super::super::super::super::Empty),
+                Start(()),
                 #[prost(message, tag = "4")]
-                End(super::super::super::super::Empty),
+                End(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
@@ -61,9 +62,9 @@ pub mod read_req {
                 #[prost(message, tag = "1")]
                 Position(super::Position),
                 #[prost(message, tag = "2")]
-                Start(super::super::super::super::Empty),
+                Start(()),
                 #[prost(message, tag = "3")]
-                End(super::super::super::super::Empty),
+                End(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
@@ -111,7 +112,7 @@ pub mod read_req {
                 #[prost(uint32, tag = "3")]
                 Max(u32),
                 #[prost(message, tag = "4")]
-                Count(super::super::super::super::Empty),
+                Count(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
@@ -126,9 +127,9 @@ pub mod read_req {
             #[derive(Clone, PartialEq, ::prost::Oneof)]
             pub enum Content {
                 #[prost(message, tag = "1")]
-                Structured(super::super::super::super::Empty),
+                Structured(()),
                 #[prost(message, tag = "2")]
-                String(super::super::super::super::Empty),
+                String(()),
             }
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
@@ -187,18 +188,24 @@ pub mod read_req {
             #[prost(message, tag = "7")]
             Filter(FilterOptions),
             #[prost(message, tag = "8")]
-            NoFilter(super::super::super::Empty),
+            NoFilter(()),
         }
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct ReadResp {
-    #[prost(oneof = "read_resp::Content", tags = "1, 2, 3, 4, 5, 6, 7")]
+    #[prost(oneof = "read_resp::Content", tags = "1, 2, 3, 4, 5, 6, 7, 8, 9")]
     pub content: ::core::option::Option<read_resp::Content>,
 }
 /// Nested message and enum types in `ReadResp`.
 pub mod read_resp {
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct CaughtUp {}
+    #[allow(clippy::derive_partial_eq_without_eq)]
+    #[derive(Clone, PartialEq, ::prost::Message)]
+    pub struct FellBehind {}
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ReadEvent {
@@ -215,9 +222,10 @@ pub mod read_resp {
         #[derive(Clone, PartialEq, ::prost::Message)]
         pub struct RecordedEvent {
             #[prost(message, optional, tag = "1")]
-            pub id: ::core::option::Option<super::super::super::Uuid>,
+            pub id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
             #[prost(message, optional, tag = "2")]
-            pub stream_identifier: ::core::option::Option<super::super::super::StreamIdentifier>,
+            pub stream_identifier:
+                ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
             #[prost(uint64, tag = "3")]
             pub stream_revision: u64,
             #[prost(uint64, tag = "4")]
@@ -240,7 +248,7 @@ pub mod read_resp {
             #[prost(uint64, tag = "3")]
             CommitPosition(u64),
             #[prost(message, tag = "4")]
-            NoPosition(super::super::super::Empty),
+            NoPosition(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -261,7 +269,8 @@ pub mod read_resp {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct StreamNotFound {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -279,7 +288,11 @@ pub mod read_resp {
         #[prost(uint64, tag = "6")]
         LastStreamPosition(u64),
         #[prost(message, tag = "7")]
-        LastAllStreamPosition(super::super::AllStreamPosition),
+        LastAllStreamPosition(crate::event_store::generated::common::AllStreamPosition),
+        #[prost(message, tag = "8")]
+        CaughtUp(CaughtUp),
+        #[prost(message, tag = "9")]
+        FellBehind(FellBehind),
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -294,7 +307,8 @@ pub mod append_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -306,18 +320,18 @@ pub mod append_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::Empty),
+            NoStream(()),
             #[prost(message, tag = "4")]
-            Any(super::super::super::Empty),
+            Any(()),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::Empty),
+            StreamExists(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ProposedMessage {
         #[prost(message, optional, tag = "1")]
-        pub id: ::core::option::Option<super::super::Uuid>,
+        pub id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
         #[prost(map = "string, string", tag = "2")]
         pub metadata: ::std::collections::HashMap<
             ::prost::alloc::string::String,
@@ -369,7 +383,7 @@ pub mod append_resp {
             #[prost(uint64, tag = "1")]
             CurrentRevision(u64),
             #[prost(message, tag = "2")]
-            NoStream(super::super::super::Empty),
+            NoStream(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -377,7 +391,7 @@ pub mod append_resp {
             #[prost(message, tag = "3")]
             Position(super::Position),
             #[prost(message, tag = "4")]
-            NoPosition(super::super::super::Empty),
+            NoPosition(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -413,7 +427,7 @@ pub mod append_resp {
             #[prost(uint64, tag = "1")]
             CurrentRevision2060(u64),
             #[prost(message, tag = "2")]
-            NoStream2060(super::super::super::Empty),
+            NoStream2060(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -421,9 +435,9 @@ pub mod append_resp {
             #[prost(uint64, tag = "3")]
             ExpectedRevision2060(u64),
             #[prost(message, tag = "4")]
-            Any2060(super::super::super::Empty),
+            Any2060(()),
             #[prost(message, tag = "5")]
-            StreamExists2060(super::super::super::Empty),
+            StreamExists2060(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -431,7 +445,7 @@ pub mod append_resp {
             #[prost(uint64, tag = "6")]
             CurrentRevision(u64),
             #[prost(message, tag = "7")]
-            CurrentNoStream(super::super::super::Empty),
+            CurrentNoStream(()),
         }
         #[allow(clippy::derive_partial_eq_without_eq)]
         #[derive(Clone, PartialEq, ::prost::Oneof)]
@@ -439,11 +453,11 @@ pub mod append_resp {
             #[prost(uint64, tag = "8")]
             ExpectedRevision(u64),
             #[prost(message, tag = "9")]
-            ExpectedAny(super::super::super::Empty),
+            ExpectedAny(()),
             #[prost(message, tag = "10")]
-            ExpectedStreamExists(super::super::super::Empty),
+            ExpectedStreamExists(()),
             #[prost(message, tag = "11")]
-            ExpectedNoStream(super::super::super::Empty),
+            ExpectedNoStream(()),
         }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
@@ -459,7 +473,7 @@ pub mod append_resp {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchAppendReq {
     #[prost(message, optional, tag = "1")]
-    pub correlation_id: ::core::option::Option<super::Uuid>,
+    pub correlation_id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
     #[prost(message, optional, tag = "2")]
     pub options: ::core::option::Option<batch_append_req::Options>,
     #[prost(message, repeated, tag = "3")]
@@ -473,11 +487,12 @@ pub mod batch_append_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
-        #[prost(message, optional, tag = "6")]
-        pub deadline: ::core::option::Option<::prost_types::Timestamp>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamPosition", tags = "2, 3, 4, 5")]
         pub expected_stream_position: ::core::option::Option<options::ExpectedStreamPosition>,
+        #[prost(oneof = "options::DeadlineOption", tags = "6, 7")]
+        pub deadline_option: ::core::option::Option<options::DeadlineOption>,
     }
     /// Nested message and enum types in `Options`.
     pub mod options {
@@ -493,12 +508,20 @@ pub mod batch_append_req {
             #[prost(message, tag = "5")]
             StreamExists(()),
         }
+        #[allow(clippy::derive_partial_eq_without_eq)]
+        #[derive(Clone, PartialEq, ::prost::Oneof)]
+        pub enum DeadlineOption {
+            #[prost(message, tag = "6")]
+            Deadline21100(::prost_types::Timestamp),
+            #[prost(message, tag = "7")]
+            Deadline(::prost_types::Duration),
+        }
     }
     #[allow(clippy::derive_partial_eq_without_eq)]
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ProposedMessage {
         #[prost(message, optional, tag = "1")]
-        pub id: ::core::option::Option<super::super::Uuid>,
+        pub id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
         #[prost(map = "string, string", tag = "2")]
         pub metadata: ::std::collections::HashMap<
             ::prost::alloc::string::String,
@@ -514,9 +537,10 @@ pub mod batch_append_req {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct BatchAppendResp {
     #[prost(message, optional, tag = "1")]
-    pub correlation_id: ::core::option::Option<super::Uuid>,
+    pub correlation_id: ::core::option::Option<crate::event_store::generated::common::Uuid>,
     #[prost(message, optional, tag = "4")]
-    pub stream_identifier: ::core::option::Option<super::StreamIdentifier>,
+    pub stream_identifier:
+        ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
     #[prost(oneof = "batch_append_resp::Result", tags = "2, 3")]
     pub result: ::core::option::Option<batch_append_resp::Result>,
     #[prost(
@@ -549,7 +573,7 @@ pub mod batch_append_resp {
         #[derive(Clone, PartialEq, ::prost::Oneof)]
         pub enum PositionOption {
             #[prost(message, tag = "3")]
-            Position(super::super::super::AllStreamPosition),
+            Position(crate::event_store::generated::common::AllStreamPosition),
             #[prost(message, tag = "4")]
             NoPosition(()),
         }
@@ -587,7 +611,8 @@ pub mod delete_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -599,11 +624,11 @@ pub mod delete_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::Empty),
+            NoStream(()),
             #[prost(message, tag = "4")]
-            Any(super::super::super::Empty),
+            Any(()),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::Empty),
+            StreamExists(()),
         }
     }
 }
@@ -629,7 +654,7 @@ pub mod delete_resp {
         #[prost(message, tag = "1")]
         Position(Position),
         #[prost(message, tag = "2")]
-        NoPosition(super::super::Empty),
+        NoPosition(()),
     }
 }
 #[allow(clippy::derive_partial_eq_without_eq)]
@@ -644,7 +669,8 @@ pub mod tombstone_req {
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct Options {
         #[prost(message, optional, tag = "1")]
-        pub stream_identifier: ::core::option::Option<super::super::StreamIdentifier>,
+        pub stream_identifier:
+            ::core::option::Option<crate::event_store::generated::common::StreamIdentifier>,
         #[prost(oneof = "options::ExpectedStreamRevision", tags = "2, 3, 4, 5")]
         pub expected_stream_revision: ::core::option::Option<options::ExpectedStreamRevision>,
     }
@@ -656,11 +682,11 @@ pub mod tombstone_req {
             #[prost(uint64, tag = "2")]
             Revision(u64),
             #[prost(message, tag = "3")]
-            NoStream(super::super::super::Empty),
+            NoStream(()),
             #[prost(message, tag = "4")]
-            Any(super::super::super::Empty),
+            Any(()),
             #[prost(message, tag = "5")]
-            StreamExists(super::super::super::Empty),
+            StreamExists(()),
         }
     }
 }
@@ -686,7 +712,7 @@ pub mod tombstone_resp {
         #[prost(message, tag = "1")]
         Position(Position),
         #[prost(message, tag = "2")]
-        NoPosition(super::super::Empty),
+        NoPosition(()),
     }
 }
 /// Generated client implementations.

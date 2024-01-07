@@ -204,8 +204,8 @@ pub mod operations_client {
         }
         pub async fn shutdown(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -225,8 +225,8 @@ pub mod operations_client {
         }
         pub async fn merge_indexes(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -246,8 +246,8 @@ pub mod operations_client {
         }
         pub async fn resign_node(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -268,7 +268,7 @@ pub mod operations_client {
         pub async fn set_node_priority(
             &mut self,
             request: impl tonic::IntoRequest<super::SetNodePriorityReq>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,
@@ -288,8 +288,8 @@ pub mod operations_client {
         }
         pub async fn restart_persistent_subscriptions(
             &mut self,
-            request: impl tonic::IntoRequest<super::super::Empty>,
-        ) -> std::result::Result<tonic::Response<super::super::Empty>, tonic::Status> {
+            request: impl tonic::IntoRequest<()>,
+        ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
             self.inner.ready().await.map_err(|e| {
                 tonic::Status::new(
                     tonic::Code::Unknown,

@@ -735,7 +735,7 @@ pub(crate) struct HandleInfo {
     pub(crate) uri: hyper::Uri,
     pub(crate) endpoint: Endpoint,
     pub(crate) secure: bool,
-    pub(crate) server_info: Option<ServerInfo>,
+    pub(crate) server_info: ServerInfo,
 }
 
 impl NodeConnection {
@@ -837,7 +837,7 @@ impl NodeConnection {
                         Ok(outcome) => match outcome {
                             Ok(fs) => {
                                 debug!("Successfully received server features");
-                                Some(fs)
+                                fs
                             }
 
                             Err(status) => {
@@ -845,7 +845,7 @@ impl NodeConnection {
                                 if status.code() == Code::NotFound
                                     || status.code() == Code::Unimplemented
                                 {
-                                    None
+                                    ServerInfo::default()
                                 } else {
                                     error!(
                                         "Unexpected error when fetching server features: {}",
@@ -1011,7 +1011,7 @@ pub(crate) struct Handle {
     pub(crate) uri: hyper::Uri,
     pub(crate) endpoint: Endpoint,
     pub(crate) secure: bool,
-    pub(crate) server_info: Option<ServerInfo>,
+    pub(crate) server_info: ServerInfo,
     sender: tokio::sync::mpsc::UnboundedSender<Msg>,
 }
 
@@ -1039,11 +1039,11 @@ impl Handle {
     }
 
     pub(crate) fn supports_feature(&self, feats: Features) -> bool {
-        if let Some(info) = self.server_info.as_ref() {
-            return info.features.contains(feats);
-        }
+        self.server_info.contains_features(feats)
+    }
 
-        false
+    pub(crate) fn server_info(&self) -> ServerInfo {
+        self.server_info
     }
 }
 

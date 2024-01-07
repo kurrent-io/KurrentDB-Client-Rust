@@ -2,7 +2,7 @@
 authors = ["Yorick Laupa <yo.eight@gmail.com>"]
 edition = "2021"
 name = "eventstore"
-version = "2.3.0"
+version = "3.0.0"
 
 # Uncomment if you want to update messages.rs code-gen.
 # We disabled codegen.rs because it requires having `protoc` installed on your machine

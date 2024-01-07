@@ -2,7 +2,7 @@ use crate::common::{fresh_stream_id, generate_events};
 use chrono::{Datelike, Utc};
 use eventstore::{
     Acl, Client, ReadEvent, StreamAclBuilder, StreamMetadataBuilder, StreamMetadataResult,
-    StreamPosition,
+    StreamName, StreamPosition, SubscriptionEvent,
 };
 use futures::channel::oneshot;
 use std::collections::HashMap;
@@ -303,6 +303,54 @@ async fn test_subscription(client: &Client) -> eyre::Result<()> {
     Ok(())
 }
 
+async fn test_subscription_caughtup(client: &Client) -> eventstore::Result<()> {
+    let info = client.server_info().await?;
+
+    if info.version() < (23, 10) {
+        warn!(
+            "test_susbcription_caughtup is skipped because server {} doesn't support it",
+            info.version()
+        );
+        return Ok(());
+    }
+
+    let stream_id = fresh_stream_id("catchup_live_detection").into_stream_name();
+    let events = generate_events("catchup_live_detected", 10);
+
+    let _ = client
+        .append_to_stream(stream_id.clone(), &Default::default(), events)
+        .await?;
+
+    let options = eventstore::SubscribeToStreamOptions::default()
+        .start_from(eventstore::StreamPosition::Start);
+
+    let mut sub = client
+        .subscribe_to_stream(stream_id.clone(), &options)
+        .await;
+
+    let (tx, recv) = oneshot::channel();
+
+    tokio::spawn(async move {
+        loop {
+            if let SubscriptionEvent::CaughtUp = sub.next_subscription_event().await? {
+                break;
+            }
+        }
+
+        let _ = tx.send(());
+        Ok(()) as eventstore::Result<()>
+    });
+
+    if tokio::time::timeout(Duration::from_secs(60), recv)
+        .await
+        .is_err()
+    {
+        panic!("test_subscription_caughtup timed out!");
+    }
+
+    Ok(())
+}
+
 async fn test_subscription_all_filter(client: &Client) -> eventstore::Result<()> {
     let filter = eventstore::SubscriptionFilter::on_event_type().exclude_system_events();
     let options = eventstore::SubscribeToAllOptions::default()
@@ -358,20 +406,7 @@ async fn test_batch_append(client: &Client) -> eventstore::Result<()> {
 }
 
 pub async fn tests(client: Client) -> eyre::Result<()> {
-    let op_client: eventstore::operations::Client = client.clone().into();
-
-    let is_at_least_21_10;
-    let is_at_least_22;
-
-    if let Some(info) = op_client.server_version().await? {
-        is_at_least_21_10 = info.version().major() == 21 && info.version().minor() >= 10
-            || info.version().major() > 21;
-        is_at_least_22 = info.version().major() >= 22;
-    } else {
-        // older versions did not have the server version api
-        is_at_least_21_10 = false;
-        is_at_least_22 = false;
-    }
+    let info = client.server_info().await?;
 
     debug!("Before test_write_events…");
     test_write_events(&client).await?;
@@ -385,12 +420,12 @@ pub async fn tests(client: Client) -> eyre::Result<()> {
     debug!("Before test_read_stream_events…");
     test_read_stream_events(&client).await?;
     debug!("Complete");
-    if is_at_least_21_10 {
+    if info.version() >= (21, 10) {
         debug!("Before test_read_stream_events_with_position");
         test_read_stream_events_with_position(&client).await?;
         debug!("Complete");
     }
-    if is_at_least_22 {
+    if info.version() >= 22 {
         debug!("Before test_read_stream_populates_log_position");
         test_read_stream_populates_log_position(&client).await?;
     }
@@ -412,6 +447,9 @@ pub async fn tests(client: Client) -> eyre::Result<()> {
     debug!("Complete");
     debug!("Before test_subscription…");
     test_subscription(&client).await?;
+    debug!("Complete");
+    debug!("Before test_subscription_caughtup…");
+    test_subscription_caughtup(&client).await?;
     debug!("Complete");
     debug!("Before test_subscription_all_filter…");
     test_subscription_all_filter(&client).await?;
