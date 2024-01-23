@@ -2,6 +2,11 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+### Changed
+- Decrease allocation due to stream name manipulation. [EventStoreDB-Client-Rust#171](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/171)
+
+### Added
+- Support `CaughtUp` subscription message. [EventStoreDB-Client-Rust#171](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/171)
 
 ## [2.3.0] - 2023-10-17
 ### Changed
