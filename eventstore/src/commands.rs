@@ -3,7 +3,7 @@
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
-use crate::event_store::client::{self,persistent, streams};
+use crate::event_store::client::{self, persistent, streams};
 use crate::types::{
     EventData, ExpectedRevision, PersistentSubscriptionSettings, Position, ReadDirection,
     ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
