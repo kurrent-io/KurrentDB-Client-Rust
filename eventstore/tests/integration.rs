@@ -230,47 +230,47 @@ async fn run_test(test: Tests, topology: Topologies) -> eyre::Result<()> {
     Ok(())
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_streams() -> eyre::Result<()> {
     run_test(Tests::Streams, Topologies::SingleNode).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_projections() -> eyre::Result<()> {
     run_test(Tests::Projections, Topologies::SingleNode).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_persistent_subscriptions() -> eyre::Result<()> {
     run_test(Tests::PersistentSubscriptions, Topologies::SingleNode).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_operations() -> eyre::Result<()> {
     run_test(Tests::Operations, Topologies::SingleNode).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn cluster_streams() -> eyre::Result<()> {
     run_test(Tests::Streams, Topologies::Cluster).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn cluster_projections() -> eyre::Result<()> {
     run_test(Tests::Projections, Topologies::Cluster).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn cluster_persistent_subscriptions() -> eyre::Result<()> {
     run_test(Tests::PersistentSubscriptions, Topologies::Cluster).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn cluster_operations() -> eyre::Result<()> {
     run_test(Tests::Operations, Topologies::Cluster).await
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_discover_error() -> eyre::Result<()> {
     let _ = pretty_env_logger::try_init();
 
@@ -290,7 +290,7 @@ async fn single_node_discover_error() -> eyre::Result<()> {
     }
 }
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread")]
 async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
     let volume = create_unique_volume()?;
     let _ = pretty_env_logger::try_init();
