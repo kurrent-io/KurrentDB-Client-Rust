@@ -31,12 +31,12 @@ impl ESDB {
 
             self.env_vars.insert(
                 "EVENTSTORE_CERTIFICATE_FILE".to_string(),
-                "/etc/eventstore/certs/node1/node.crt".to_string(),
+                "/etc/eventstore/certs/node/node.crt".to_string(),
             );
 
             self.env_vars.insert(
                 "EVENTSTORE_CERTIFICATE_PRIVATE_KEY_FILE".to_string(),
-                "/etc/eventstore/certs/node1/node.key".to_string(),
+                "/etc/eventstore/certs/node/node.key".to_string(),
             );
 
             self.env_vars.insert(
@@ -81,8 +81,8 @@ impl ESDB {
         let certs = &[
             ["ca", "ca.crt"],
             ["ca", "ca.key"],
-            ["node1", "node.crt"],
-            ["node1", "node.key"],
+            ["node", "node.crt"],
+            ["node", "node.key"],
         ];
 
         root_dir.push("certs");
