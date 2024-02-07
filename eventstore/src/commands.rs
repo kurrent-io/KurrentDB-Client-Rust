@@ -3,7 +3,7 @@
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
-use crate::event_store::client::{persistent, streams};
+use crate::event_store::client::{self, persistent, streams};
 use crate::types::{
     EventData, ExpectedRevision, PersistentSubscriptionSettings, Position, ReadDirection,
     ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
@@ -18,7 +18,7 @@ use tonic::{Request, Streaming};
 
 use crate::batch::BatchAppendClient;
 use crate::event_store::generated::common::StreamIdentifier;
-use crate::grpc::{handle_error, GrpcClient, Handle, Msg};
+use crate::grpc::{handle_error, GrpcClient, Handle, HyperClient, Msg};
 use crate::options::append_to_stream::AppendToStreamOptions;
 use crate::options::batch_append::BatchAppendOptions;
 use crate::options::persistent_subscription::PersistentSubscriptionOptions;
@@ -190,7 +190,7 @@ pub async fn append_to_stream(
     let handle = connection.current_selected_node().await?;
     let handle_id = handle.id();
     let req = new_request(connection.connection_settings(), options, payload);
-    let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_streams_client(handle);
     let resp = match client.append(req).await {
         Err(e) => {
             let e = crate::Error::from_grpc(e);
@@ -287,7 +287,7 @@ pub async fn batch_append(
 
     let req = new_request(connection.connection_settings(), options, receiver);
     tokio::spawn(async move {
-        let mut client = StreamsClient::with_origin(handle.client.clone(), handle.uri.clone());
+        let mut client = create_streams_client(handle.clone());
         match client.batch_append(req).await {
             Err(e) => {
                 let _ = cloned_batch_sender
@@ -516,7 +516,7 @@ pub async fn read_stream(
     let req = new_request(connection.connection_settings(), options, req);
     let handle = connection.current_selected_node().await?;
     let channel_id = handle.id();
-    let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_streams_client(handle);
 
     match client.read(req).await {
         Err(status) => {
@@ -587,7 +587,7 @@ pub async fn read_all(
     let req = new_request(connection.connection_settings(), options, req);
     let handle = connection.current_selected_node().await?;
     let channel_id = handle.id();
-    let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_streams_client(handle);
 
     match client.read(req).await {
         Err(status) => {
@@ -641,7 +641,7 @@ pub async fn delete_stream(
 
     connection
         .execute(|handle| async {
-            let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+            let mut client = create_streams_client(handle);
             let result = client.delete(req).await?.into_inner();
 
             if let Some(opts) = result.position_option {
@@ -700,7 +700,7 @@ pub async fn tombstone_stream(
 
     connection
         .execute(|handle| async {
-            let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+            let mut client = create_streams_client(handle);
             let result = client.tombstone(req).await?.into_inner();
 
             if let Some(opts) = result.position_option {
@@ -877,7 +877,7 @@ impl Subscription {
 
                 self.channel_id = handle.id();
 
-                let mut client = StreamsClient::with_origin(handle.client, handle.uri);
+                let mut client = create_streams_client(handle);
                 let mut req = Request::new(streams::ReadReq {
                     options: Some(self.options.clone()),
                 });
@@ -1189,7 +1189,7 @@ where
     let req = new_request(connection.connection_settings(), options, req);
 
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
     if let Err(e) = client.create(req).await {
         let e = crate::Error::from_grpc(e);
         handle_error(&connection.sender, id, &e);
@@ -1242,7 +1242,7 @@ where
 
     let req = new_request(connection.connection_settings(), options, req);
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
     if let Err(e) = client.update(req).await {
         let e = crate::Error::from_grpc(e);
         handle_error(&connection.sender, id, &e);
@@ -1289,7 +1289,7 @@ pub async fn delete_persistent_subscription<S: AsRef<str>>(
 
     let req = new_request(connection.connection_settings(), options, req);
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
 
     if let Err(e) = client.delete(req).await {
         let e = crate::Error::from_grpc(e);
@@ -1356,7 +1356,7 @@ pub async fn subscribe_to_persistent_subscription<S: AsRef<str>>(
 
     let _ = sender.send(read_req).await;
     let channel_id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
 
     match client.read(req).await {
         Err(status) => {
@@ -1669,8 +1669,7 @@ where
 
     let req = new_request(settings, op_options, req);
     let id = handle.id();
-    let mut client =
-        PersistentSubscriptionsClient::with_origin(handle.client.clone(), handle.uri.clone());
+    let mut client = create_persistent_subscriptions_client(handle.clone());
 
     match client.list(req).await {
         Err(status) => {
@@ -1752,7 +1751,7 @@ where
 
     let req = new_request(connection.connection_settings(), op_options, req);
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
     if let Err(e) = client.replay_parked(req).await {
         let e = crate::Error::from_grpc(e);
         handle_error(&connection.sender, id, &e);
@@ -1811,7 +1810,7 @@ where
     let req = new_request(connection.connection_settings(), op_options, req);
 
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
 
     match client.get_info(req).await {
         Err(e) => {
@@ -1852,7 +1851,7 @@ pub async fn restart_persistent_subscription_subsystem(
     }
 
     let id = handle.id();
-    let mut client = PersistentSubscriptionsClient::with_origin(handle.client, handle.uri);
+    let mut client = create_persistent_subscriptions_client(handle);
     let req = new_request(connection.connection_settings(), op_options, ());
 
     if let Err(e) = client.restart_subsystem(req).await {
@@ -1863,4 +1862,16 @@ pub async fn restart_persistent_subscription_subsystem(
     }
 
     Ok(())
+}
+
+fn create_streams_client(handle: Handle) -> StreamsClient<HyperClient> {
+    StreamsClient::with_origin(handle.client, handle.uri)
+        .max_decoding_message_size(client::MAX_RECEIVE_MESSAGE_SIZE)
+}
+
+fn create_persistent_subscriptions_client(
+    handle: Handle,
+) -> PersistentSubscriptionsClient<HyperClient> {
+    PersistentSubscriptionsClient::with_origin(handle.client, handle.uri)
+        .max_decoding_message_size(client::MAX_RECEIVE_MESSAGE_SIZE)
 }
