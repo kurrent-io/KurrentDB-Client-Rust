@@ -3,7 +3,7 @@
 use std::collections::HashMap;
 use testcontainers::{core::WaitFor, Image};
 
-const CONTAINER_IDENTIFIER: &str = "ghcr.io/eventstore/eventstore";
+const CONTAINER_IDENTIFIER: &str = "docker.eventstore.com/eventstore-ce/eventstoredb-ce";
 const DEFAULT_TAG: &str = "latest";
 
 #[derive(Debug, Clone)]
