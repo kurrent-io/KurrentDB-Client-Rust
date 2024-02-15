@@ -1,4 +1,5 @@
 # EventStoreDB Rust Client
+
 [![Crates.io][crates-badge]][crates-url]
 [![Crates.io][crates-download]][crates-url]
 [![Build Status][ci-badge]][ci-url]
