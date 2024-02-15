@@ -143,9 +143,14 @@ pub(crate) async fn supported_methods(
         .into_inner();
 
     let mut version = ServerVersion::default();
+    let semver: String = methods
+        .event_store_server_version
+        .chars()
+        .filter(|&c| c.is_ascii_digit() || c == '.')
+        .collect();
 
     // Server version uses sem versioning.
-    for (idx, ver) in methods.event_store_server_version.split('.').enumerate() {
+    for (idx, ver) in semver.split('.').enumerate() {
         if idx > 2 {
             break;
         }
