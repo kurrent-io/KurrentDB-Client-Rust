@@ -8,6 +8,9 @@ All notable changes to this project will be documented in this file.
 ### Added
 - Support `CaughtUp` subscription message. [EventStoreDB-Client-Rust#171](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/171)
 
+### Fixed
+- parsing of server semver for CI, where the server version may have tagging [EventStoreDB-Client-Rust#176](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/176)
+
 ## [2.3.0] - 2023-10-17
 ### Changed
 - Update container version when testing. [EventStoreDB-Client-Rust#159](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/159)
