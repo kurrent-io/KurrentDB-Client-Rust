@@ -2,6 +2,8 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
+## [3.0.0] - 2024-02-29
 ### Changed
 - Decrease allocation due to stream name manipulation. [EventStoreDB-Client-Rust#171](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/171)
 
