@@ -15,7 +15,7 @@
 
 Official Rust [EventStoreDB rust gRPC] gRPC Client.
 
-[EventStoreDB] is an open-source database built from the ground up for Event Sourcing, with Complex Event Processing in Javascript.
+[EventStoreDB] is the event-native database, where business events are immutably stored and streamed. Designed for event-sourced, event-driven, and microservices architectures.
 
 ## EventStoreDB Server Compatibility
 This client is compatible with version `20.6.1` upwards and works on Linux, MacOS and Windows.
@@ -79,9 +79,10 @@ Documentation for EventStoreDB can be found here: [EventStoreDB Docs]
 
 Bear in mind that this client is not yet properly documented. We are working hard on a new version of the documentation.
 
-## Community
+## Communities
 
-We have a community discussion space at [EventStoreDB Discuss].
+- [Discuss](https://discuss.eventstore.com/)
+- [Discord (Event Store)](https://discord.gg/Phn9pmCw3t)
 
 [EventStoreDB]: https://eventstore.com/
 [EventStoreDB rust gRPC]: https://developers.eventstore.com/clients/grpc/getting-started?codeLanguage=Rust
