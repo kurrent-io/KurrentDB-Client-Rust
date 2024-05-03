@@ -5,6 +5,7 @@ All notable changes to this project will be documented in this file.
 
 ### Changed
 - Updated CI workflows to pull eventstore docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
+- Updated everywhere to pull es-gencert-cli from Cloudsmith [EventStoreDB-Client-Rust#179](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/179)
 
 ## [3.0.0] - 2024-02-29
 ### Changed
