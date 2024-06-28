@@ -1,7 +1,8 @@
-use crate::operations::gossip::{self, MemberInfo, VNodeState};
-use crate::server_features::{Features, ServerInfo};
-use crate::types::{Endpoint, GrpcConnectionError};
-use crate::{Credentials, DnsClusterSettings, NodePreference};
+use std::cmp::Ordering;
+use std::fmt::Display;
+use std::str::FromStr;
+use std::time::Duration;
+
 use futures::Future;
 use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
@@ -12,15 +13,16 @@ use rand::{RngCore, SeedableRng};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Serialize};
 use serde::{Deserializer, Serializer};
-use std::cmp::Ordering;
-use std::fmt::Display;
-use std::str::FromStr;
-use std::time::Duration;
 use tokio::sync::mpsc::UnboundedSender;
 use tokio::sync::oneshot;
 use tonic::{Code, Status};
 use url::Url;
 use uuid::Uuid;
+
+use crate::operations::gossip::{self, MemberInfo, VNodeState};
+use crate::server_features::{Features, ServerInfo};
+use crate::types::{Endpoint, GrpcConnectionError};
+use crate::{Credentials, DnsClusterSettings, NodePreference};
 
 struct NoVerification;
 
@@ -1159,7 +1161,7 @@ async fn node_selection(
             // Use case: when the cluster is only comprised of a single node and that node
             // previously failed. This can only happen if the user used a fixed set of seeds.
             if new_candidates.is_empty() {
-                new_candidates = conn_setts.hosts.clone();
+                new_candidates.clone_from(&conn_setts.hosts);
             }
 
             new_candidates
@@ -1331,11 +1333,12 @@ fn determine_best_node(
 
 #[cfg(test)]
 mod node_selection_tests {
+    use rand::{rngs::SmallRng, RngCore, SeedableRng};
+
     use crate::{
         operations::gossip::{MemberInfo, VNodeState},
         Endpoint, NodePreference,
     };
-    use rand::{rngs::SmallRng, RngCore, SeedableRng};
 
     // Make sure matching preference nodes are still sorted randomly.
 
