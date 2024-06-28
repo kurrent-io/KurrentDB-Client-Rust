@@ -3,20 +3,16 @@
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
-use crate::event_store::client::{self, persistent, streams};
-use crate::types::{
-    EventData, ExpectedRevision, PersistentSubscriptionSettings, Position, ReadDirection,
-    ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
-};
-
 use futures::TryStreamExt;
 use nom::AsBytes;
-use persistent::persistent_subscriptions_client::PersistentSubscriptionsClient;
-use streams::streams_client::StreamsClient;
 use tokio::sync::mpsc;
 use tonic::{Request, Streaming};
 
+use persistent::persistent_subscriptions_client::PersistentSubscriptionsClient;
+use streams::streams_client::StreamsClient;
+
 use crate::batch::BatchAppendClient;
+use crate::event_store::client::{self, persistent, streams};
 use crate::event_store::generated::common::StreamIdentifier;
 use crate::grpc::{handle_error, GrpcClient, Handle, HyperClient, Msg};
 use crate::options::append_to_stream::AppendToStreamOptions;
@@ -28,6 +24,10 @@ use crate::options::subscribe_to_stream::SubscribeToStreamOptions;
 use crate::options::{OperationKind, Options};
 use crate::request::build_request_metadata;
 use crate::server_features::Features;
+use crate::types::{
+    EventData, ExpectedRevision, PersistentSubscriptionSettings, Position, ReadDirection,
+    ResolvedEvent, StreamPosition, SubscriptionEvent, WriteResult,
+};
 use crate::{
     ClientSettings, DeletePersistentSubscriptionOptions, DeleteStreamOptions,
     GetPersistentSubscriptionInfoOptions, ListPersistentSubscriptionsOptions, NakAction,
@@ -50,28 +50,6 @@ fn convert_event_data_to_batch_proposed_message(
         metadata: event.metadata,
         custom_metadata,
         data: event.payload,
-    }
-}
-
-/// This trait is added as a compatibility layer when interacting with EventStoreDB servers <= 21 version.
-/// Its goal is to translate a persistent subscription starting position value to a u64 so the deprecated
-/// revision field can be used.
-///
-/// When dealing with persistent subscription to $all, we default any persistent subscription to $all
-/// starting position to 0 as the server will just ignore the field anyway.
-pub(crate) trait PsPosition: Copy {
-    fn to_deprecated_value(self) -> Option<u64>;
-}
-
-impl PsPosition for u64 {
-    fn to_deprecated_value(self) -> Option<u64> {
-        Some(self)
-    }
-}
-
-impl PsPosition for Position {
-    fn to_deprecated_value(self) -> Option<u64> {
-        None
     }
 }
 
@@ -1022,7 +1000,7 @@ pub fn subscribe_to_all(connection: GrpcClient, options: &SubscribeToAllOptions)
 /// This trait is used to avoid code duplication when introducing persistent subscription to $all. It
 /// allows us to re-use most of regular persistent subscription code.
 pub(crate) trait PsSettings: crate::options::Options {
-    type Pos: PsPosition;
+    type Pos: Copy;
 
     fn settings(&self) -> &PersistentSubscriptionSettings<Self::Pos>;
 
