@@ -1,9 +1,10 @@
 #![allow(dead_code)]
 
 use std::collections::HashMap;
+
 use testcontainers::{core::WaitFor, Image};
 
-const CONTAINER_IDENTIFIER: &str = "docker.eventstore.com/eventstore-ce/eventstoredb-ce";
+const CONTAINER_IDENTIFIER: &str = "docker.eventstore.com/eventstore-staging-ce/eventstoredb-oss";
 const DEFAULT_TAG: &str = "latest";
 
 #[derive(Debug, Clone)]
