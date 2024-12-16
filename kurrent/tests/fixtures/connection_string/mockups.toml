@@ -1,0 +1,411 @@
+[[mockups]]
+string = "esdb://localhost"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost:2114"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "esdb://user:pass@localhost:2114"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "esdb://user:pass@localhost:2114/"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "esdb://user:pass@localhost:2114?tlsVerifyCert=false"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = false
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "esdb://user:pass@localhost:2114?tls=false"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = false
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "esdb://host1,host2,host3"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "host1"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host2"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host3"
+port = 2_113
+
+[[mockups]]
+string = "esdb://host1:1234,host2:4321,host3:3231"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "host1"
+port = 1_234
+[[mockups.expected.hosts]]
+host = "host2"
+port = 4_321
+[[mockups.expected.hosts]]
+host = "host3"
+port = 3_231
+
+[[mockups]]
+string = "esdb://user:pass@host1:1234,host2:4321,host3:3231?nodePreference=follower"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Follower"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "host1"
+port = 1_234
+[[mockups.expected.hosts]]
+host = "host2"
+port = 4_321
+[[mockups.expected.hosts]]
+host = "host3"
+port = 3_231
+
+[[mockups]]
+string = "esdb://host1,host2,host3?tls=false"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = false
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "host1"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host2"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host3"
+port = 2_113
+
+[[mockups]]
+string = "esdb://host1,host2,host3?tlsVerifyCert=false"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = false
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "host1"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host2"
+port = 2_113
+[[mockups.expected.hosts]]
+host = "host3"
+port = 2_113
+
+[[mockups]]
+string = "esdb+discover://user:pass@host?nodePreference=follower&tlsVerifyCert=false"
+[mockups.expected]
+dns_discover = true
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Follower"
+secure = true
+tls_verify_cert = false
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "host"
+port = 2_113
+
+[[mockups]]
+string = "esdb+discover://user:pass@host?nodePreference=follower&tlsVerifyCert=false&dnsLookUpType=srv"
+[mockups.expected]
+dns_discover = true
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Follower"
+secure = true
+tls_verify_cert = false
+dns_lookup_type = "srv"
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "host"
+port = 2_113
+
+[[mockups]]
+string = "esdb://host?MaxDiscoverAttempts=200&discoveryinterval=1000&GOSSIPTIMEOUT=1&nOdEpReFeReNcE=leader&TLS=false&TlsVerifyCert=false&THROWOnAppendFailure=true"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 200
+discovery_interval = 1000
+gossip_timeout = 1
+preference = "Leader"
+secure = false
+tls_verify_cert = false
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "host"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?keepAliveInterval=20000&keepAliveTimeout=30000"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 20_000
+keep_alive_timeout = 30_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?keepAliveInterval=-1&keepAliveTimeout=-1"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = -1
+keep_alive_timeout = -1
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?keepAliveInterval=20000&keepAliveTimeout=-33"
+expect_failure = true
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 20_000
+keep_alive_timeout = 30_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?keepAliveInterval=kjslkjfds&keepAliveTimeout=30000"
+expect_failure = true
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 20_000
+keep_alive_timeout = 30_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?defaultDeadline=1"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+default_deadline = 1
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?defaultDeadline=100000"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+default_deadline = 100_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://localhost?connectionName=foobar"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+connection_name = "foobar"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "esdb://foo:bar@kurrent_db:2115"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "foo"
+password = "bar"
+[[mockups.expected.hosts]]
+host = "kurrent_db"
+port = 2_115

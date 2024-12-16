@@ -1,4 +1,4 @@
-name: Get ESDB Docker repo
+name: Get Kurrent Docker repo
 on:
   workflow_call:
     inputs:
@@ -9,11 +9,11 @@ on:
 
     outputs:
       docker_repo:
-        description: ESDB docker repository
+        description: Kurrent docker repository
         value: ${{ jobs.provide_docker.outputs.docker_repo }}
 
       docker_container:
-        description: ESDB docker container
+        description: Kurrent docker container
         value: ${{ jobs.provide_docker.outputs.docker_container }}
 
 jobs:
@@ -23,27 +23,27 @@ jobs:
       docker_repo: ${{ steps.set_docker.outputs.docker_repo }}
       docker_container: ${{ steps.set_docker.outputs.docker_container }}
     steps:
-      - name: Set ESDB docker repo
+      - name: Set Kurrent docker repo
         id: set_docker
         run: |
           case ${{ inputs.runtime_env }} in
             "release")
-              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
+              echo "docker_repo=kurrent-ce" >> $GITHUB_OUTPUT
+              echo "docker_container=kurrentdb-ce" >> $GITHUB_OUTPUT
             ;;
 
             "staging")
-              echo "docker_repo=eventstore-staging-ce" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-oss" >> $GITHUB_OUTPUT
+              echo "docker_repo=kurrent-staging-ce" >> $GITHUB_OUTPUT
+              echo "docker_container=kurrentdb-oss" >> $GITHUB_OUTPUT
             ;;
           
             "enterprise")
-              echo "docker_repo=eventstore-ee" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-commercial" >> $GITHUB_OUTPUT
+              echo "docker_repo=kurrent-ee" >> $GITHUB_OUTPUT
+              echo "docker_container=kurrentdb-commercial" >> $GITHUB_OUTPUT
             ;;
 
             *)
-              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
+              echo "docker_repo=kurrent-ce" >> $GITHUB_OUTPUT
+              echo "docker_container=kurrentdb-ce" >> $GITHUB_OUTPUT
             ;;
           esac

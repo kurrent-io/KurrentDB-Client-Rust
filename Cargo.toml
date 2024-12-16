@@ -1,10 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
-    "eventstore",
-    "eventstore-extras",
+    "kurrent",
+    "kurrent-extras",
 
     # internals
-    "eventstore-macros",
+    "kurrent-macros",
     "examples"
 ]

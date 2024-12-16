@@ -5,7 +5,7 @@
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
-use eventstore::{
+use kurrent::{
     Client, Credentials, EventData, ExpectedRevision, Position, RetryOptions, StreamPosition,
     SubscribeToAllOptions, SubscribeToStreamOptions, SubscriptionEvent, SubscriptionFilter,
 };

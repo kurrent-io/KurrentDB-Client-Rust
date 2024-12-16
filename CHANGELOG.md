@@ -4,7 +4,7 @@ All notable changes to this project will be documented in this file.
 ## [Unreleased]
 
 ### Changed
-- Updated CI workflows to pull eventstore docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
+- Updated CI workflows to pull kurrent docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
 - Updated everywhere to pull es-gencert-cli from Cloudsmith [EventStoreDB-Client-Rust#179](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/179)
 - Support different runtime environments out-of-the-box. [EventStoreDB-Client-Rust#183](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/183)
 
@@ -286,7 +286,7 @@ All notable changes to this project will be documented in this file.
 
 0.2.0
 =====
-* Simplify public eventstore module.
+* Simplify public kurrent module.
 * Move to a typeful representation of `resolve_link_tos` setting.
 * Implement connection state-machine graceful exit.
 * Introduce new connection api.
