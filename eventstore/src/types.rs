@@ -667,19 +667,19 @@ where
 
 struct DurationVisitor;
 
-impl<'de> Visitor<'de> for DurationVisitor {
+impl Visitor<'_> for DurationVisitor {
     type Value = Option<Duration>;
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "a time duration in milliseconds")
     }
 
-    fn visit_none<E>(self) -> std::result::Result<Self::Value, E> {
-        Ok(None)
-    }
-
     fn visit_u64<E>(self, value: u64) -> std::result::Result<Self::Value, E> {
         Ok(Some(Duration::from_millis(value)))
+    }
+
+    fn visit_none<E>(self) -> std::result::Result<Self::Value, E> {
+        Ok(None)
     }
 }
 
@@ -690,13 +690,6 @@ impl<'de> Visitor<'de> for AclVisitor {
 
     fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
         write!(formatter, "a EventStoreDB ACL")
-    }
-
-    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
-    where
-        E: serde::de::Error,
-    {
-        Ok(None)
     }
 
     fn visit_str<E>(self, value: &str) -> std::result::Result<Self::Value, E>
@@ -711,6 +704,13 @@ impl<'de> Visitor<'de> for AclVisitor {
                 &self,
             )),
         }
+    }
+
+    fn visit_none<E>(self) -> std::result::Result<Self::Value, E>
+    where
+        E: serde::de::Error,
+    {
+        Ok(None)
     }
 
     fn visit_map<M>(self, map: M) -> std::result::Result<Self::Value, M::Error>
@@ -1739,7 +1739,7 @@ impl Serialize for StreamPosition<RevisionOrPosition> {
 
 struct PositionVisitor;
 
-impl<'de> serde::de::Visitor<'de> for PositionVisitor {
+impl Visitor<'_> for PositionVisitor {
     type Value = Position;
 
     fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
@@ -1790,7 +1790,7 @@ impl<'de> Deserialize<'de> for StreamPosition<RevisionOrPosition> {
 
 struct StreamRevOrPosVisitor;
 
-impl<'de> serde::de::Visitor<'de> for StreamRevOrPosVisitor {
+impl Visitor<'_> for StreamRevOrPosVisitor {
     type Value = StreamPosition<RevisionOrPosition>;
 
     fn expecting(&self, formatter: &mut Formatter) -> std::fmt::Result {
@@ -1923,7 +1923,7 @@ impl StreamName for Bytes {
     }
 }
 
-impl<'a> StreamName for &'a str {
+impl StreamName for &str {
     fn into_stream_name(self) -> Bytes {
         self.to_string().into()
     }
@@ -1945,7 +1945,7 @@ impl MetadataStreamName for Bytes {
     }
 }
 
-impl<'a> MetadataStreamName for &'a str {
+impl MetadataStreamName for &str {
     fn into_metadata_stream_name(self) -> Bytes {
         format!("$${}", self).to_string().into()
     }

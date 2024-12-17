@@ -146,7 +146,7 @@ impl std::error::Error for ClientSettingsParseError {}
 
 struct DurationVisitor;
 
-impl<'de> Visitor<'de> for DurationVisitor {
+impl Visitor<'_> for DurationVisitor {
     type Value = Duration;
 
     fn expecting(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
