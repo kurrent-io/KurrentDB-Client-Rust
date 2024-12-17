@@ -15,7 +15,7 @@ pub fn generate_events<Type: AsRef<str>>(event_type: Type, cnt: usize) -> Vec<Ev
             "event_index": idx,
         });
 
-        let data = EventData::json(event_type.as_ref(), payload).unwrap();
+        let data = EventData::json(event_type.as_ref(), &payload).unwrap();
         events.push(data);
     }
 

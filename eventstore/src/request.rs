@@ -1,5 +1,6 @@
 use crate::options::CommonOperationOptions;
 use crate::{ClientSettings, NodePreference};
+use base64::Engine;
 
 pub(crate) fn build_request_metadata(
     settings: &ClientSettings,
@@ -19,7 +20,8 @@ where
         let login = String::from_utf8_lossy(&creds.login).into_owned();
         let password = String::from_utf8_lossy(&creds.password).into_owned();
 
-        let basic_auth_string = base64::encode(format!("{}:{}", login, password));
+        let basic_auth_string =
+            base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", login, password));
         let basic_auth = format!("Basic {}", basic_auth_string);
         let header_value = MetadataValue::try_from(basic_auth.as_str())
             .expect("Auth header value should be valid metadata header value");

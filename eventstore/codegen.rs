@@ -12,7 +12,7 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
         .extern_path(".event_store.client.Empty", "()")
         .bytes(&["StreamIdentifier.stream_name"])
         .out_dir(out_dir)
-        .compile(&files, &[""])?;
+        .compile_protos(&files, &[""])?;
 
     for entry in std::fs::read_dir(out_dir)? {
         let file = entry.unwrap();
@@ -25,7 +25,7 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
 
             let new_file = file.path().parent().unwrap().join("common.rs");
 
-            std::fs::rename(file.path(), new_file)?;
+            fs::rename(file.path(), new_file)?;
         }
     }
 
@@ -40,7 +40,7 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
         "protos/users.proto",
     ];
 
-    std::fs::create_dir_all(out_dir)?;
+    fs::create_dir_all(out_dir)?;
 
     tonic_build::configure()
         .build_server(false)
@@ -67,7 +67,7 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
             ".event_store.client.UUID",
             "crate::event_store::generated::common::Uuid",
         )
-        .compile(&files, &["protos"])?;
+        .compile_protos(&files, &["protos"])?;
 
     for entry in std::fs::read_dir(out_dir)? {
         let file = entry.unwrap();
@@ -87,10 +87,10 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
 
             let new_file = file.path().parent().unwrap().join(new_file_name);
 
-            std::fs::rename(file.path(), new_file)?;
+            fs::rename(file.path(), new_file)?;
         } else if filename_string.as_str() == "google.rpc.rs" {
             let new_file = file.path().parent().unwrap().join("google_rpc.rs");
-            std::fs::rename(file.path(), new_file)?;
+            fs::rename(file.path(), new_file)?;
         }
     }
 

@@ -1,15 +1,18 @@
 use std::cmp::Ordering;
-use std::fmt::Display;
+use std::fmt::{Debug, Display};
 use std::str::FromStr;
 use std::time::Duration;
 
 use futures::Future;
-use hyper::client::HttpConnector;
 use hyper_rustls::HttpsConnector;
+use hyper_util::client::legacy::connect::HttpConnector;
 use nom::lib::std::fmt::Formatter;
 use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::{RngCore, SeedableRng};
+use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified};
+use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
+use rustls::{DigitallySignedStruct, SignatureScheme};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Serialize};
 use serde::{Deserializer, Serializer};
@@ -24,19 +27,41 @@ use crate::server_features::{Features, ServerInfo};
 use crate::types::{Endpoint, GrpcConnectionError};
 use crate::{Credentials, DnsClusterSettings, NodePreference};
 
+#[derive(Debug)]
 struct NoVerification;
 
-impl rustls::client::ServerCertVerifier for NoVerification {
+impl rustls::client::danger::ServerCertVerifier for NoVerification {
     fn verify_server_cert(
         &self,
-        _end_entity: &rustls::Certificate,
-        _intermediates: &[rustls::Certificate],
-        _server_name: &rustls::ServerName,
-        _scts: &mut dyn Iterator<Item = &[u8]>,
+        _end_entity: &CertificateDer<'_>,
+        _intermediates: &[CertificateDer<'_>],
+        _server_name: &ServerName<'_>,
         _ocsp_response: &[u8],
-        _now: std::time::SystemTime,
-    ) -> Result<rustls::client::ServerCertVerified, rustls::Error> {
-        Ok(rustls::client::ServerCertVerified::assertion())
+        _now: UnixTime,
+    ) -> Result<ServerCertVerified, rustls::Error> {
+        Ok(ServerCertVerified::assertion())
+    }
+
+    fn verify_tls12_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, rustls::Error> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn verify_tls13_signature(
+        &self,
+        _message: &[u8],
+        _cert: &CertificateDer<'_>,
+        _dss: &DigitallySignedStruct,
+    ) -> Result<HandshakeSignatureValid, rustls::Error> {
+        Ok(HandshakeSignatureValid::assertion())
+    }
+
+    fn supported_verify_schemes(&self) -> Vec<SignatureScheme> {
+        vec![]
     }
 }
 
@@ -707,7 +732,8 @@ pub(crate) mod defaults {
     pub const KEEP_ALIVE_TIMEOUT_IN_MS: u64 = 10_000;
 }
 
-pub(crate) type HyperClient = hyper::Client<HttpsConnector<HttpConnector>, tonic::body::BoxBody>;
+pub(crate) type HyperClient =
+    hyper_util::client::legacy::Client<HttpsConnector<HttpConnector>, tonic::body::BoxBody>;
 
 struct NodeConnection {
     id: Uuid,
@@ -746,11 +772,10 @@ impl NodeConnection {
 
         for cert in rustls_native_certs::load_native_certs().expect("could not load platform certs")
         {
-            roots.add(&rustls::Certificate(cert.0)).unwrap();
+            roots.add(cert).unwrap();
         }
 
         let mut tls = tokio_rustls::rustls::ClientConfig::builder()
-            .with_safe_defaults()
             .with_root_certificates(roots)
             .with_no_client_auth();
 
@@ -772,11 +797,12 @@ impl NodeConnection {
             })
             .service(http);
 
-        let client = hyper::Client::builder()
-            .http2_only(true)
-            .http2_keep_alive_interval(settings.keep_alive_interval)
-            .http2_keep_alive_timeout(settings.keep_alive_timeout)
-            .build::<_, tonic::body::BoxBody>(connector);
+        let client =
+            hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
+                .http2_only(true)
+                .http2_keep_alive_interval(settings.keep_alive_interval)
+                .http2_keep_alive_timeout(settings.keep_alive_timeout)
+                .build::<_, tonic::body::BoxBody>(connector);
 
         let cluster_mode = if settings.dns_discover || settings.hosts().len() > 1 {
             let mode = if settings.dns_discover {

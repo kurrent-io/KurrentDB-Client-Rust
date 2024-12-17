@@ -408,12 +408,12 @@ pub struct EventData {
 
 impl EventData {
     /// Creates an event with a JSON payload.
-    pub fn json<S, P>(event_type: S, payload: P) -> serde_json::Result<EventData>
+    pub fn json<S, P>(event_type: S, payload: &P) -> serde_json::Result<EventData>
     where
         P: Serialize,
         S: AsRef<str>,
     {
-        let payload = Bytes::from(serde_json::to_vec(&payload)?);
+        let payload = Bytes::from(serde_json::to_vec(payload)?);
         let mut metadata = HashMap::new();
         metadata.insert("type".to_owned(), event_type.as_ref().to_owned());
         metadata.insert("content-type".to_owned(), "application/json".to_owned());
@@ -455,11 +455,11 @@ impl EventData {
     }
 
     /// Assigns a JSON metadata to this event.
-    pub fn metadata_as_json<P>(self, payload: P) -> serde_json::Result<EventData>
+    pub fn metadata_as_json<P>(self, payload: &P) -> serde_json::Result<EventData>
     where
         P: Serialize,
     {
-        let custom_metadata = Some(Bytes::from(serde_json::to_vec(&payload)?));
+        let custom_metadata = Some(Bytes::from(serde_json::to_vec(payload)?));
         Ok(EventData {
             custom_metadata,
             ..self
