@@ -803,6 +803,7 @@ impl NodeConnection {
 
         let client =
             hyper_util::client::legacy::Client::builder(hyper_util::rt::TokioExecutor::new())
+                .timer(hyper_util::rt::tokio::TokioTimer::new())
                 .http2_only(true)
                 .http2_keep_alive_interval(settings.keep_alive_interval)
                 .http2_keep_alive_timeout(settings.keep_alive_timeout)
