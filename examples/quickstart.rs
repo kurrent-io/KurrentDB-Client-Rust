@@ -31,7 +31,7 @@ pub async fn run() -> Result<()> {
         important_data: "I wrote my first event!".to_string(),
     };
 
-    let event_data = EventData::json("TestEvent", event)?.id(Uuid::new_v4());
+    let event_data = EventData::json("TestEvent", &event)?.id(Uuid::new_v4());
     // endregion createEvent
 
     let main_event_data = event_data.clone();

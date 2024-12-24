@@ -19,43 +19,42 @@ categories = ["database", "api-bindings"]
 
 [dependencies]
 async-stream = "0.3"
-base64 = "0.13"
+base64 = "0.22"
 bitflags = "2"
-byteorder = "1.2"
+byteorder = "1"
 bytes = "1"
 chrono = { version = "0.4", default-features = false, features = ["std", "serde"] }
 eventstore-macros = { path = "../eventstore-macros", version = "0.0.1" }
 futures = "0.3"
-http = "0.2"
-hyper = { version = "0.14", features = ["client", "tcp"] }
-hyper-rustls = { version = "0.23", features = ["rustls-native-certs", "http2"] }
+http = "1"
+hyper = { version = "1", features = ["client"] }
+hyper-util = { version = "0.1", features = ["client-legacy", "http2"] }
+hyper-rustls = { version = "0.27", features = ["rustls-native-certs", "http2"] }
 log = "0.4"
 nom = "7"
-prost = "0.12"
-prost-derive = "0.12"
-prost-types = "0.12"
+prost = "0.13"
+prost-types = "0.13"
 rand = { version = "0.8", features = ["small_rng"] }
-reqwest = { version = "0.11", default-features = false, features = [
+reqwest = { version = "0.12", default-features = false, features = [
   "rustls-tls",
   "rustls-tls-native-roots",
   "json",
 ] }
-rustls = { version = "0.20", features = ["dangerous_configuration"] }
-rustls-native-certs = "0.6"
+rustls = { version = "0.23" }
+rustls-native-certs = "0.8"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
-thiserror = "1"
+thiserror = "2"
 tokio = { version = "1", default-features = false, features = ["time"] }
-tokio-rustls = "0.23"
-tonic = { version = "0.10", features = ["tls", "tls-roots"] }
-tower = "0.4"
+tokio-rustls = "0.26"
+tonic = { version = "0.12", features = ["tls", "tls-roots"] }
+tower = "0.5"
 url = "2"
 urlencoding = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
-webpki = "0.22"
 
 [build-dependencies]
-tonic-build = { version = "0.10.2", features = ["prost-build"] }
+tonic-build = { version = "0.12", features = ["prost-build"] }
 
 [[test]]
 name = "integration"

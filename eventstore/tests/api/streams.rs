@@ -150,7 +150,7 @@ async fn test_metadata(client: &Client) -> eventstore::Result<()> {
         .build();
 
     let _ = client
-        .set_stream_metadata(stream_id.as_str(), &Default::default(), expected.clone())
+        .set_stream_metadata(stream_id.as_str(), &Default::default(), &expected)
         .await?;
 
     let actual = client

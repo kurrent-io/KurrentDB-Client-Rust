@@ -151,7 +151,7 @@ pub async fn append_to_stream(
     });
     let header = Content::Options(append_req::Options {
         stream_identifier,
-        expected_stream_revision: Some(options.version.clone()),
+        expected_stream_revision: Some(options.version),
     });
     let header = AppendReq {
         content: Some(header),

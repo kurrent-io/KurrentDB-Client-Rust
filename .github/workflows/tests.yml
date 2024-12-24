@@ -69,7 +69,7 @@ jobs:
         run: rustup update stable
 
       - name: Generate certificates
-        run: docker-compose --file configure-tls-for-tests.yml up
+        run: docker compose --file configure-tls-for-tests.yml up
 
       - name: Run test
         run: cargo test --package eventstore --test integration single_node_${{ matrix.test }}
@@ -104,7 +104,7 @@ jobs:
         run: rustup update stable
 
       - name: Set up cluster with Docker Compose
-        run: docker-compose up -d
+        run: docker compose up -d
         env:
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
@@ -118,4 +118,4 @@ jobs:
           RUST_BACKTRACE: 1
 
       - name: Shutdown cluster
-        run: docker-compose down
+        run: docker compose down

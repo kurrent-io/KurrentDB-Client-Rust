@@ -86,7 +86,7 @@ impl Client {
         &self,
         name: impl MetadataStreamName,
         options: &AppendToStreamOptions,
-        metadata: StreamMetadata,
+        metadata: &StreamMetadata,
     ) -> crate::Result<WriteResult> {
         let event = EventData::json("$metadata", metadata)
             .map_err(|e| crate::Error::InternalParsingError(e.to_string()))?;

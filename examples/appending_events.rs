@@ -105,7 +105,7 @@ pub async fn append_with_concurrency_check(client: Client) -> Result<()> {
         important_data: "clientOne".to_string(),
     };
 
-    let event = EventData::json("some-event", data)?.id(Uuid::new_v4());
+    let event = EventData::json("some-event", &data)?.id(Uuid::new_v4());
     let options = AppendToStreamOptions::default().expected_revision(ExpectedRevision::Exact(
         last_event.get_original_event().revision,
     ));
@@ -135,7 +135,7 @@ pub async fn append_overriding_user_credentials(client: &Client) -> Result<()> {
         important_data: "clientOne".to_string(),
     };
 
-    let event = EventData::json("some-event", data)?.id(Uuid::new_v4());
+    let event = EventData::json("some-event", &data)?.id(Uuid::new_v4());
 
     // region overriding-user-credentials
     let options =
