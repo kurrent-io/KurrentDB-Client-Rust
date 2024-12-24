@@ -253,7 +253,7 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
             let settings = "esdb://admin:changeit@localhost:2111,localhost:2112,localhost:2113?tlsVerifyCert=false&nodePreference=leader&maxdiscoverattempts=50&defaultDeadline=60000"
                 .parse::<ClientSettings>()?;
 
-            let client = Client::new(settings)?;
+            let client = Client::new(settings.clone())?;
 
             // Those pre-checks are put in place to avoid test flakiness. In essence, those functions use
             // features we test later on.
@@ -349,7 +349,7 @@ async fn single_node_discover_error() -> eyre::Result<()> {
         .append_to_stream(stream_id, &Default::default(), events)
         .await;
 
-    if let Err(eventstore::Error::GrpcConnectionError(_)) = result {
+    if let Err(kurrent::Error::GrpcConnectionError(_)) = result {
         Ok(())
     } else {
         panic!("Expected gRPC connection error");
@@ -377,8 +377,8 @@ async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
     let cloned_setts = settings.clone();
     let client = Client::new(settings)?;
     let stream_name = fresh_stream_id("auto-reconnect");
-    let retry = eventstore::RetryOptions::default().retry_forever();
-    let options = eventstore::SubscribeToStreamOptions::default().retry_options(retry);
+    let retry = kurrent::RetryOptions::default().retry_forever();
+    let options = kurrent::SubscribeToStreamOptions::default().retry_options(retry);
     let mut stream = client
         .subscribe_to_stream(stream_name.as_str(), &options)
         .await;
