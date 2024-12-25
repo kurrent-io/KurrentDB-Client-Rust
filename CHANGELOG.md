@@ -7,6 +7,7 @@ All notable changes to this project will be documented in this file.
 - Updated CI workflows to pull eventstore docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
 - Updated everywhere to pull es-gencert-cli from Cloudsmith [EventStoreDB-Client-Rust#179](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/179)
 - Support different runtime environments out-of-the-box. [EventStoreDB-Client-Rust#183](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/183)
+- Upgrade to latest plus QoL improvements. [EventStoreDB-Client-Rust#186](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/186)
 
 ### Fixed
 - Address latest compiler linting suggestions. [EventStoreDB-Client-Rust#181](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/181)
