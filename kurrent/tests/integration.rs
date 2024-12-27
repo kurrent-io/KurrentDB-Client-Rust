@@ -5,8 +5,8 @@ mod misc;
 mod plugins;
 
 use crate::common::{fresh_stream_id, generate_events};
-use eventstore::{Client, ClientSettings};
 use futures::channel::oneshot;
+use kurrent::{Client, ClientSettings};
 use std::time::Duration;
 use testcontainers::{ImageExt, core::ContainerPort, runners::AsyncRunner};
 use tracing::{debug, error};
@@ -38,7 +38,7 @@ fn create_unique_volume() -> eyre::Result<VolumeName> {
     Ok(dir_name)
 }
 
-async fn wait_node_is_alive(setts: &eventstore::ClientSettings, port: u16) -> eyre::Result<()> {
+async fn wait_node_is_alive(setts: &kurrent::ClientSettings, port: u16) -> eyre::Result<()> {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()?;
@@ -100,15 +100,15 @@ async fn wait_node_is_alive(setts: &eventstore::ClientSettings, port: u16) -> ey
 
 // This function assumes that we are using the admin credentials. It's possible during CI that
 // the cluster hasn't created the admin user yet, leading to failing the tests.
-async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<()> {
-    fn can_retry(e: &eventstore::Error) -> bool {
+async fn wait_for_admin_to_be_available(client: &Client) -> kurrent::Result<()> {
+    fn can_retry(e: &kurrent::Error) -> bool {
         matches!(
             e,
-            eventstore::Error::AccessDenied
-                | eventstore::Error::DeadlineExceeded
-                | eventstore::Error::ServerError(_)
-                | eventstore::Error::NotLeaderException(_)
-                | eventstore::Error::ResourceNotFound
+            kurrent::Error::AccessDenied
+                | kurrent::Error::DeadlineExceeded
+                | kurrent::Error::ServerError(_)
+                | kurrent::Error::NotLeaderException(_)
+                | kurrent::Error::ResourceNotFound
         )
     }
     let mut count = 0;
@@ -153,7 +153,7 @@ async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<(
         }
     }
 
-    Err(eventstore::Error::ServerError(
+    Err(kurrent::Error::ServerError(
         "Waiting for the admin user to be created took too much time".to_string(),
     ))
 }

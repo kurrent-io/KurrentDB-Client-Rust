@@ -261,7 +261,7 @@ fn default_keep_alive_timeout() -> Duration {
 /// `ClientSettings` can only be created when parsing a connection string.
 ///
 /// ```
-/// # use eventstore::ClientSettings;
+/// # use kurrent::ClientSettings;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let setts = "esdb://localhost:1234?tls=false".parse::<ClientSettings>()?;
 /// # Ok(())
@@ -272,7 +272,7 @@ fn default_keep_alive_timeout() -> Duration {
 /// For example, you can define a cluster-mode client based on a fixed set of gossip seeds:
 ///
 /// ```
-/// # use eventstore::ClientSettings;
+/// # use kurrent::ClientSettings;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let setts = "esdb://localhost:1111,localhost:2222,localhost:3333".parse::<ClientSettings>()?;
 /// # Ok(())
@@ -282,7 +282,7 @@ fn default_keep_alive_timeout() -> Duration {
 /// Same example except we are using DNS discovery this time. The client will perform SRV queries
 /// to resolve all the node associated to that domain:
 /// ```
-/// # use eventstore::ClientSettings;
+/// # use kurrent::ClientSettings;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// let setts = "esdb+discover://mydomain:1234".parse::<ClientSettings>()?;
 /// # Ok(())
@@ -1245,7 +1245,7 @@ impl GrpcClient {
 pub(crate) fn handle_error(sender: &UnboundedSender<Msg>, connection_id: Uuid, err: &crate::Error) {
     if let crate::Error::ServerError(status) = err {
         error!(
-            "Current selected EventStoreDB node gone unavailable. Starting node selection process: {}",
+            "Current selected KurrentDB node gone unavailable. Starting node selection process: {}",
             status
         );
 
