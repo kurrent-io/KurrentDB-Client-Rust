@@ -2,6 +2,7 @@ use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 use std::time::Duration;
+use tracing::{debug, error, info, warn};
 
 use futures::Future;
 use hyper_rustls::HttpsConnector;
@@ -81,8 +82,6 @@ impl rustls::client::danger::ServerCertVerifier for NoVerification {
 
 #[test]
 fn test_connection_string() {
-    pretty_env_logger::init();
-
     #[derive(Debug, Serialize, Deserialize)]
     struct Mockup {
         string: String,
@@ -759,7 +758,7 @@ struct NodeConnection {
     previous_candidates: Option<Vec<Member>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum ClusterMode {
     Dns(DnsClusterSettings),
     Seeds(Vec<Endpoint>),
@@ -847,6 +846,7 @@ impl NodeConnection {
         }
     }
 
+    #[tracing::instrument(skip(self, request))]
     async fn next(
         &mut self,
         mut request: Option<NodeRequest>,
@@ -1186,11 +1186,13 @@ pub(crate) fn handle_error(sender: &UnboundedSender<Msg>, connection_id: Uuid, e
     }
 }
 
+#[derive(Debug)]
 struct Member {
     endpoint: Endpoint,
     state: VNodeState,
 }
 
+#[tracing::instrument(skip(conn_setts, client, rng))]
 async fn node_selection(
     conn_setts: &ClientSettings,
     mode: &ClusterMode,

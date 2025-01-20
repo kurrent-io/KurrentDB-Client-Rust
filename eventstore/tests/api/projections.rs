@@ -1,6 +1,7 @@
 use crate::common::generate_events;
 use eventstore::{Client, ProjectionClient};
 use serde::Deserialize;
+use tracing::{debug, error, warn};
 
 // This is the state of the projection, see tests/fixtures/projection.js.
 #[derive(Deserialize, Debug)]
@@ -21,8 +22,8 @@ struct Baz {
     _count: f64,
 }
 
-static PROJECTION_FILE: &'static str = include_str!("../fixtures/projection.js");
-static PROJECTION_UPDATED_FILE: &'static str = include_str!("../fixtures/projection-updated.js");
+static PROJECTION_FILE: &str = include_str!("../fixtures/projection.js");
+static PROJECTION_UPDATED_FILE: &str = include_str!("../fixtures/projection-updated.js");
 
 async fn wait_until_projection_status_cc(
     client: &ProjectionClient,

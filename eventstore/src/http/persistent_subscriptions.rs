@@ -8,6 +8,7 @@ use crate::{
     RestartPersistentSubscriptionSubsystem, RevisionOrPosition,
 };
 use std::time::Duration;
+use tracing::error;
 
 /// Replays a persistent subscriptions parked events.
 pub(crate) async fn replay_parked_messages(

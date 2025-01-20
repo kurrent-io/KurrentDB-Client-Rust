@@ -30,7 +30,7 @@ http = "1"
 hyper = { version = "1", features = ["client"] }
 hyper-util = { version = "0.1", features = ["client-legacy", "http2"] }
 hyper-rustls = { version = "0.27", features = ["rustls-native-certs", "http2"] }
-log = "0.4"
+tracing = "0.1"
 nom = "7"
 prost = "0.13"
 prost-types = "0.13"
@@ -61,7 +61,6 @@ name = "integration"
 
 [dev-dependencies]
 names = "0.14"
-pretty_env_logger = "0.5"
 serde = { version = "1", features = ["derive"] }
 testcontainers = "0.14"
 tokio = { version = "1", default-features = false, features = [
@@ -70,6 +69,11 @@ tokio = { version = "1", default-features = false, features = [
 ] }
 toml = "0.7"
 eyre = "0.6"
+ctor = "0.2"
+
+[dev-dependencies.tracing-subscriber]
+version = "0.3"
+features = ["env-filter"]
 
 [package.metadata.docs.rs]
 all-features = true

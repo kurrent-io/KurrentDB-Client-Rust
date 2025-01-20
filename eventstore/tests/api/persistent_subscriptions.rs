@@ -1,6 +1,7 @@
 use crate::common::{fresh_stream_id, generate_events};
 use eventstore::{Client, StreamPosition};
 use std::time::Duration;
+use tracing::{debug, warn};
 
 async fn test_create_persistent_subscription(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("create_persistent_sub");

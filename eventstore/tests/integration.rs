@@ -1,6 +1,3 @@
-#[macro_use]
-extern crate log;
-
 mod api;
 mod common;
 mod images;
@@ -11,6 +8,18 @@ use futures::channel::oneshot;
 use std::time::Duration;
 use testcontainers::clients::Cli;
 use testcontainers::core::RunnableImage;
+use tracing::{debug, error};
+use tracing_subscriber::EnvFilter;
+
+#[ctor::ctor]
+fn test_init() {
+    tracing_subscriber::fmt::fmt()
+        .with_env_filter(EnvFilter::new("integration=debug,eventstore=debug"))
+        .with_file(true)
+        .with_line_number(true)
+        .with_target(true)
+        .init();
+}
 
 type VolumeName = String;
 
@@ -163,7 +172,6 @@ async fn run_test(test: Tests, topology: Topologies) -> eyre::Result<()> {
     let docker = Cli::default();
     let mut target_container = None;
 
-    let _ = pretty_env_logger::try_init();
     let client = match topology {
         Topologies::SingleNode => {
             let secure_mode = if let Some("true") = std::option_env!("SECURE") {
@@ -272,8 +280,6 @@ async fn cluster_operations() -> eyre::Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_discover_error() -> eyre::Result<()> {
-    let _ = pretty_env_logger::try_init();
-
     let settings = format!("esdb://noserver:{}", 2_113).parse()?;
     let client = Client::new(settings)?;
     let stream_id = fresh_stream_id("wont-be-created");
@@ -293,7 +299,6 @@ async fn single_node_discover_error() -> eyre::Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
     let volume = create_unique_volume()?;
-    let _ = pretty_env_logger::try_init();
     let docker = Cli::default();
     let image = images::ESDB::default()
         .insecure_mode()
