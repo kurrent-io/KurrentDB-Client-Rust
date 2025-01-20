@@ -480,5 +480,8 @@ fn test_uuid_conversion() {
     let id = uuid::Uuid::new_v4();
     let wire: common::Uuid = id.into();
 
-    assert_eq!(id, wire.try_into().unwrap());
+    assert_eq!(
+        id,
+        <common::Uuid as TryInto<uuid::Uuid>>::try_into(wire).unwrap()
+    );
 }
