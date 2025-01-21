@@ -3,13 +3,14 @@
 use std::collections::HashMap;
 use testcontainers::{core::WaitFor, Image};
 
-const REGISTRY: &str = "docker.eventstore.com";
-const DEFAULT_REPO: &str = "eventstore-ce";
-const DEFAULT_CONTAINER: &str = "eventstoredb-ce";
+const DEFAULT_REGISTRY: &str = "docker.io";
+const DEFAULT_REPO: &str = "eventstore";
+const DEFAULT_CONTAINER: &str = "eventstore";
 const DEFAULT_TAG: &str = "latest";
 
 #[derive(Debug, Clone)]
 pub struct ESDB {
+    registry: String,
     tag: String,
     repo: String,
     container: String,
@@ -80,6 +81,27 @@ impl ESDB {
         self
     }
 
+    pub fn forward_eventstore_env_variables(mut self, forward: bool) -> Self {
+        if !forward {
+            return self;
+        }
+
+        for (key, value) in std::env::vars_os() {
+            if let Some((key, value)) = key.to_str().zip(value.to_str()) {
+                let key = key.to_lowercase();
+                let value = value.to_lowercase();
+
+                if !key.starts_with("eventstore") {
+                    continue;
+                }
+
+                self.env_vars.insert(key, value);
+            }
+        }
+
+        self
+    }
+
     fn verify_certificates_exist(&self) -> std::io::Result<()> {
         let mut root_dir = std::env::current_dir()?;
         let certs = &[
@@ -111,7 +133,7 @@ impl Image for ESDB {
     type Args = ();
 
     fn name(&self) -> String {
-        format!("{}/{}/{}", REGISTRY, self.repo, self.container)
+        format!("{}/{}/{}", self.registry, self.repo, self.container)
     }
 
     fn tag(&self) -> String {
@@ -137,6 +159,7 @@ impl Image for ESDB {
 
 impl Default for ESDB {
     fn default() -> Self {
+        let registry = option_env!("ESDB_DOCKER_REGISTRY").unwrap_or(DEFAULT_REGISTRY);
         let tag = option_env!("ESDB_DOCKER_CONTAINER_VERSION").unwrap_or(DEFAULT_TAG);
         let repo = option_env!("ESDB_DOCKER_REPO").unwrap_or(DEFAULT_REPO);
         let container = option_env!("ESDB_DOCKER_CONTAINER").unwrap_or(DEFAULT_CONTAINER);
@@ -148,6 +171,7 @@ impl Default for ESDB {
         );
 
         ESDB {
+            registry: registry.to_string(),
             tag: tag.to_string(),
             repo: repo.to_string(),
             container: container.to_string(),

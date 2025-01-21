@@ -1,6 +1,7 @@
 mod api;
 mod common;
 mod images;
+mod plugins;
 
 use crate::common::{fresh_stream_id, generate_events};
 use eventstore::{Client, ClientSettings};
@@ -157,10 +158,37 @@ async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<(
 }
 
 enum Tests {
+    Api(ApiTests),
+    Plugins(PluginTests),
+}
+
+impl Tests {
+    fn is_plugin_related(&self) -> bool {
+        matches!(self, Tests::Plugins(_))
+    }
+}
+
+enum ApiTests {
     Streams,
     PersistentSubscriptions,
     Projections,
     Operations,
+}
+
+impl From<ApiTests> for Tests {
+    fn from(test: ApiTests) -> Self {
+        Tests::Api(test)
+    }
+}
+
+enum PluginTests {
+    UserCertificates,
+}
+
+impl From<PluginTests> for Tests {
+    fn from(test: PluginTests) -> Self {
+        Tests::Plugins(test)
+    }
 }
 
 enum Topologies {
@@ -168,40 +196,37 @@ enum Topologies {
     Cluster,
 }
 
-async fn run_test(test: Tests, topology: Topologies) -> eyre::Result<()> {
+async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<()> {
+    let test = test.into();
     let docker = Cli::default();
-    let mut target_container = None;
+    let mut container_port = 2_113;
 
-    let client = match topology {
+    let predifined_client = match topology {
         Topologies::SingleNode => {
-            let secure_mode = if let Some("true") = std::option_env!("SECURE") {
-                true
-            } else {
-                false
-            };
+            let secure_mode = matches!(std::option_env!("SECURE"), Some("true"));
 
             let image = images::ESDB::default()
-                .secure_mode(secure_mode)
+                .secure_mode(secure_mode  || test.is_plugin_related())
+                .forward_eventstore_env_variables(test.is_plugin_related())
                 .enable_projections();
             let container = docker.run(image);
 
+            container_port = container.get_host_port_ipv4(2_113);
             let settings = if secure_mode {
                 format!(
                     "esdb://admin:changeit@localhost:{}?defaultDeadline=60000&tlsVerifyCert=false",
-                    container.get_host_port_ipv4(2_113),
+                    container_port,
                 )
                 .parse::<ClientSettings>()
             } else {
                 format!(
                     "esdb://localhost:{}?tls=false&defaultDeadline=60000",
-                    container.get_host_port_ipv4(2_113),
+                    container_port,
                 )
                 .parse::<ClientSettings>()
             }?;
 
-            wait_node_is_alive(&settings, container.get_host_port_ipv4(2_113)).await?;
-            target_container = Some(container);
-
+            wait_node_is_alive(&settings, container_port).await?;
             Client::new(settings.clone())?
         }
 
@@ -220,19 +245,17 @@ async fn run_test(test: Tests, topology: Topologies) -> eyre::Result<()> {
     };
 
     let result = match test {
-        Tests::Streams => api::streams::tests(client).await,
-        Tests::PersistentSubscriptions => api::persistent_subscriptions::tests(client).await,
-        Tests::Projections => api::projections::tests(client).await,
-        Tests::Operations => api::operations::tests(client).await,
-    };
+        Tests::Api(test) => match test {
+            ApiTests::Streams => api::streams::tests(predifined_client).await,
+            ApiTests::PersistentSubscriptions => api::persistent_subscriptions::tests(predifined_client).await,
+            ApiTests::Projections => api::projections::tests(predifined_client).await,
+            ApiTests::Operations => api::operations::tests(predifined_client).await,
+        }
 
-    if let Some(container) = target_container {
-        std::process::Command::new("docker")
-            .arg("cp")
-            .arg(format!("{}:/var/log/eventstore", container.id()))
-            .arg("./esdb_logs")
-            .output()?;
-    }
+        Tests::Plugins(test) => match test {
+            PluginTests::UserCertificates => plugins::user_certificates::tests(container_port).await,
+        }
+    };
 
     result?;
     Ok(())
@@ -240,42 +263,47 @@ async fn run_test(test: Tests, topology: Topologies) -> eyre::Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_streams() -> eyre::Result<()> {
-    run_test(Tests::Streams, Topologies::SingleNode).await
+    run_test(ApiTests::Streams, Topologies::SingleNode).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_projections() -> eyre::Result<()> {
-    run_test(Tests::Projections, Topologies::SingleNode).await
+    run_test(ApiTests::Projections, Topologies::SingleNode).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_persistent_subscriptions() -> eyre::Result<()> {
-    run_test(Tests::PersistentSubscriptions, Topologies::SingleNode).await
+    run_test(ApiTests::PersistentSubscriptions, Topologies::SingleNode).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_operations() -> eyre::Result<()> {
-    run_test(Tests::Operations, Topologies::SingleNode).await
+    run_test(ApiTests::Operations, Topologies::SingleNode).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn plugin_usercertificates() -> eyre::Result<()> {
+    run_test(PluginTests::UserCertificates, Topologies::SingleNode).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn cluster_streams() -> eyre::Result<()> {
-    run_test(Tests::Streams, Topologies::Cluster).await
+    run_test(ApiTests::Streams, Topologies::Cluster).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn cluster_projections() -> eyre::Result<()> {
-    run_test(Tests::Projections, Topologies::Cluster).await
+    run_test(ApiTests::Projections, Topologies::Cluster).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn cluster_persistent_subscriptions() -> eyre::Result<()> {
-    run_test(Tests::PersistentSubscriptions, Topologies::Cluster).await
+    run_test(ApiTests::PersistentSubscriptions, Topologies::Cluster).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
 async fn cluster_operations() -> eyre::Result<()> {
-    run_test(Tests::Operations, Topologies::Cluster).await
+    run_test(ApiTests::Operations, Topologies::Cluster).await
 }
 
 #[tokio::test(flavor = "multi_thread")]

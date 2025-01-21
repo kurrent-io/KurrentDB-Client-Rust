@@ -46,6 +46,7 @@ jobs:
         run: cargo nextest run --hide-progress-bar single_node_${{ matrix.test }}
         continue-on-error: ${{ matrix.test == 'auto_resub_on_connection_drop' }}
         env:
+          ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
@@ -84,16 +85,11 @@ jobs:
       - name: Run test
         run: cargo nextest run --hide-progress-bar single_node_${{ matrix.test }}
         env:
+          ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
           SECURE: true
-
-      - uses: actions/upload-artifact@v3
-        if: failure()
-        with:
-          name: esdb-logs
-          path: eventstore/esdb_logs
 
   cluster:
     needs: provide_docker
@@ -120,6 +116,7 @@ jobs:
       - name: Set up cluster with Docker Compose
         run: docker compose up -d
         env:
+          ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
@@ -131,3 +128,47 @@ jobs:
 
       - name: Shutdown cluster
         run: docker compose down
+
+  plugins:
+    needs: provide_docker
+    name: plugins
+
+    strategy:
+      fail-fast: false
+      matrix:
+        plugin:
+          - name: usercertificates
+          - setup: |
+              docker compose --file configure-user-certs-for-tests.yml up
+
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install
+        run: rustup update stable
+
+      - name: Generate certificates
+        run: docker compose --file configure-tls-for-tests.yml up
+
+      - name: Run plugin ${{ matrix.plugin.name }} setup
+        run: ${{ matrix.plugin.setup }}
+
+      - name: Install cargo-nextest
+        uses: baptiste0928/cargo-install@v3
+        with:
+          crate: cargo-nextest
+          locked: true
+
+      - name: Set the plugins environment variables
+        run: |
+          export eventstore__${{ matrix.plugin.name }}__enabled=true >> $GITHUB_ENV
+
+      - name: Run test
+        run: cargo nextest run --hide-progress-bar plugins_${{ matrix.plugin.name }}
+        env:
+          ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
+          ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
+          ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
+          ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
+          EVENTSTORE__LICENSING__LICENSEKEY: ${{ secrets.LICENSE }}

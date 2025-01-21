@@ -8,6 +8,10 @@ on:
         default: release
 
     outputs:
+      docker_registry:
+        description: ESDB docker registry
+        value: ${{ jobs.provide_docker.outputs.docker_registry }}
+
       docker_repo:
         description: ESDB docker repository
         value: ${{ jobs.provide_docker.outputs.docker_repo }}
@@ -28,22 +32,26 @@ jobs:
         run: |
           case ${{ inputs.runtime_env }} in
             "release")
-              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
+              echo "docker_registry=docker.io" >> $GITHUB_OUTPUT
+              echo "docker_repo=eventstore" >> $GITHUB_OUTPUT
+              echo "docker_container=eventstore" >> $GITHUB_OUTPUT
             ;;
 
             "staging")
+              echo "docker_registry=docker.eventstore.com" >> $GITHUB_OUTPUT
               echo "docker_repo=eventstore-staging-ce" >> $GITHUB_OUTPUT
               echo "docker_container=eventstoredb-oss" >> $GITHUB_OUTPUT
             ;;
           
             "enterprise")
+              echo "docker_registry=docker.eventstore.com" >> $GITHUB_OUTPUT
               echo "docker_repo=eventstore-ee" >> $GITHUB_OUTPUT
               echo "docker_container=eventstoredb-commercial" >> $GITHUB_OUTPUT
             ;;
 
             *)
-              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
+              echo "docker_registry=docker.io" >> $GITHUB_OUTPUT
+              echo "docker_repo=eventstore" >> $GITHUB_OUTPUT
+              echo "docker_container=eventstore" >> $GITHUB_OUTPUT
             ;;
           esac
