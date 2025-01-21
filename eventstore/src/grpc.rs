@@ -1,3 +1,4 @@
+use rustls::pki_types::pem::PemObject;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
@@ -12,7 +13,7 @@ use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::{RngCore, SeedableRng};
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified};
-use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName, UnixTime};
 use rustls::{DigitallySignedStruct, SignatureScheme};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Serialize};
@@ -359,6 +360,8 @@ pub struct ClientSettings {
     )]
     pub(crate) default_deadline: Option<Duration>,
     pub(crate) connection_name: Option<String>,
+    pub(crate) user_cert_file: Option<String>,
+    pub(crate) user_key_file: Option<String>,
 }
 
 impl ClientSettings {
@@ -404,6 +407,12 @@ impl ClientSettings {
         format!("{}://{}:{}", scheme, endpoint.host, endpoint.port)
             .parse()
             .unwrap()
+    }
+
+    pub fn user_certificate(&self) -> Option<(&String, &String)> {
+        self.user_cert_file
+            .as_ref()
+            .zip(self.user_key_file.as_ref())
     }
 
     pub(crate) fn to_hyper_uri(&self, endpoint: &Endpoint) -> hyper::Uri {
@@ -613,11 +622,26 @@ fn parse_from_url(
                 result.connection_name = Some(value.to_string());
             }
 
+            "usercertfile" => {
+                result.user_cert_file = Some(value.to_string());
+            }
+
+            "userkeyfile" => {
+                result.user_key_file = Some(value.to_string());
+            }
+
             ignored => {
                 warn!("Ignored connection string parameter: {}", ignored);
                 continue;
             }
         }
+    }
+
+    if result.user_key_file.is_none() ^ result.user_cert_file.is_none() {
+        return Err(ClientSettingsParseError {
+            message: "Invalid user certificate settings. Both userCertFile and userKeyFile must be provided".to_string(),
+            error: None,
+        });
     }
 
     Ok(result)
@@ -736,6 +760,8 @@ impl Default for ClientSettings {
             keep_alive_timeout: Duration::from_millis(self::defaults::KEEP_ALIVE_TIMEOUT_IN_MS),
             default_deadline: None,
             connection_name: None,
+            user_cert_file: None,
+            user_key_file: None,
         }
     }
 }
@@ -792,9 +818,20 @@ impl NodeConnection {
             .install_default()
             .expect("failed to install rustls crypto provider");
 
-        let mut tls = tokio_rustls::rustls::ClientConfig::builder()
-            .with_root_certificates(roots)
-            .with_no_client_auth();
+        let tls = tokio_rustls::rustls::ClientConfig::builder().with_root_certificates(roots);
+
+        let mut tls = if let Some((cert, key)) = settings.user_certificate() {
+            let cert_chain: Result<Vec<CertificateDer<'_>>, _> =
+                CertificateDer::pem_file_iter(cert).unwrap().collect();
+
+            tls.with_client_auth_cert(
+                cert_chain.unwrap(),
+                PrivateKeyDer::from_pem_file(key).unwrap(),
+            )
+            .unwrap()
+        } else {
+            tls.with_no_client_auth()
+        };
 
         if !settings.tls_verify_cert && settings.secure {
             tls.dangerous()
