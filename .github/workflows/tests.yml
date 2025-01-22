@@ -13,6 +13,8 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
+  NEXTEST_FAILURE_OUTPUT: final
+  NEXTEST_HIDE_PROGRESS_BAR: true
 
 jobs:
   provide_docker:
@@ -43,19 +45,13 @@ jobs:
           locked: true
 
       - name: Run test
-        run: cargo nextest run --hide-progress-bar single_node_${{ matrix.test }}
+        run: cargo nextest run single_node_${{ matrix.test }}
         continue-on-error: ${{ matrix.test == 'auto_resub_on_connection_drop' }}
         env:
           ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
-
-      - uses: actions/upload-artifact@v3
-        if: failure() && matrix.test != 'auto_resub_on_connection_drop'
-        with:
-          name: esdb-logs
-          path: eventstore/esdb_logs
 
   secure:
     needs: provide_docker
@@ -83,7 +79,7 @@ jobs:
           locked: true
 
       - name: Run test
-        run: cargo nextest run --hide-progress-bar single_node_${{ matrix.test }}
+        run: cargo nextest run single_node_${{ matrix.test }}
         env:
           ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
@@ -122,7 +118,7 @@ jobs:
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
 
       - name: Run test
-        run: cargo nextest run --hide-progress-bar cluster_${{ matrix.test }}
+        run: cargo nextest run cluster_${{ matrix.test }}
         env:
           ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
 
@@ -142,6 +138,9 @@ jobs:
               docker compose --file configure-user-certs-for-tests.yml up
 
     runs-on: ubuntu-latest
+    # so far, only the LTS version comes with plugins
+    # date: Jan 22nd, 2025
+    if: inputs.esdb_version == 'lts'
     steps:
       - uses: actions/checkout@v3
 
@@ -165,7 +164,7 @@ jobs:
           export eventstore__${{ matrix.plugin.name }}__enabled=true >> $GITHUB_ENV
 
       - name: Run test
-        run: cargo nextest run --hide-progress-bar plugins_${{ matrix.plugin.name }}
+        run: cargo nextest run plugins_${{ matrix.plugin.name }}
         env:
           ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
           ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}

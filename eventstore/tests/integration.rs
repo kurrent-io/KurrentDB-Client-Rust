@@ -11,10 +11,9 @@ use testcontainers::{core::ContainerPort, runners::AsyncRunner, ImageExt};
 use tracing::{debug, error};
 use tracing_subscriber::EnvFilter;
 
-#[ctor::ctor]
-fn test_init() {
+fn configure_logging() {
     tracing_subscriber::fmt::fmt()
-        .with_env_filter(EnvFilter::new("integration=debug,eventstore=debug"))
+        .with_env_filter(EnvFilter::new("integration=debug,eventstore=debug,testcontainers=debug"))
         .with_file(true)
         .with_line_number(true)
         .with_target(true)
@@ -196,6 +195,7 @@ enum Topologies {
 }
 
 async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<()> {
+    configure_logging();
     let test = test.into();
     let mut container_port = 2_113;
 
