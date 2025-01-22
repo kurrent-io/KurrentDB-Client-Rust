@@ -33,9 +33,9 @@ jobs:
         run: |
           case ${{ inputs.runtime_env }} in
             "release")
-              echo "docker_registry=docker.io" >> $GITHUB_OUTPUT
-              echo "docker_repo=eventstore" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstore" >> $GITHUB_OUTPUT
+              echo "docker_registry=docker.eventstore.com" >> $GITHUB_OUTPUT
+              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
+              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
             ;;
 
             "staging")
@@ -51,8 +51,8 @@ jobs:
             ;;
 
             *)
-              echo "docker_registry=docker.io" >> $GITHUB_OUTPUT
-              echo "docker_repo=eventstore" >> $GITHUB_OUTPUT
-              echo "docker_container=eventstore" >> $GITHUB_OUTPUT
+              echo "docker_registry=docker.eventstore.com" >> $GITHUB_OUTPUT
+              echo "docker_repo=eventstore-ce" >> $GITHUB_OUTPUT
+              echo "docker_container=eventstoredb-ce" >> $GITHUB_OUTPUT
             ;;
           esac

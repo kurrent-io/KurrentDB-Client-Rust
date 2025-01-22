@@ -132,14 +132,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        plugin:
+        plugins:
           - name: usercertificates
-          - setup: |
-              docker compose --file configure-user-certs-for-tests.yml up
+          - setup: docker compose --file configure-user-certs-for-tests.yml up
 
     runs-on: ubuntu-latest
-    # so far, only the LTS version comes with plugins
     # date: Jan 22nd, 2025
+    # so far, only the LTS version comes with plugins
     if: inputs.esdb_version == 'lts'
     steps:
       - uses: actions/checkout@v3
@@ -150,8 +149,8 @@ jobs:
       - name: Generate certificates
         run: docker compose --file configure-tls-for-tests.yml up
 
-      - name: Run plugin ${{ matrix.plugin.name }} setup
-        run: ${{ matrix.plugin.setup }}
+      - name: Run plugin ${{ matrix.plugins.name }} setup
+        run: ${{ matrix.plugins.setup }}
 
       - name: Install cargo-nextest
         uses: baptiste0928/cargo-install@v3
@@ -161,13 +160,16 @@ jobs:
 
       - name: Set the plugins environment variables
         run: |
-          export eventstore__${{ matrix.plugin.name }}__enabled=true >> $GITHUB_ENV
+          export eventstore__${{ matrix.plugins.name }}__enabled=true >> $GITHUB_ENV
 
       - name: Run test
-        run: cargo nextest run plugins_${{ matrix.plugin.name }}
+        run: cargo nextest run plugin_${{ matrix.plugins.name }}
         env:
-          ESDB_DOCKER_REGISTRY: ${{ needs.provide_docker.outputs.docker_registry }}
-          ESDB_DOCKER_REPO: ${{ needs.provide_docker.outputs.docker_repo }}
-          ESDB_DOCKER_CONTAINER: ${{ needs.provide_docker.outputs.docker_container }}
-          ESDB_DOCKER_CONTAINER_VERSION: ${{ inputs.esdb_version }}
+          # date: Jan 22nd, 2025
+          # so far, only the LTS version comes with plugins but also only one provided by dockerhub.
+          # it's going changed very soon after rebranding.
+          ESDB_DOCKER_REGISTRY: docker.io # ${{ needs.provide_docker.outputs.docker_registry }}
+          ESDB_DOCKER_REPO: eventstore # ${{ needs.provide_docker.outputs.docker_repo }}
+          ESDB_DOCKER_CONTAINER: eventstore # ${{ needs.provide_docker.outputs.docker_container }}
+          ESDB_DOCKER_CONTAINER_VERSION: lts # ${{ inputs.esdb_version }}
           EVENTSTORE__LICENSING__LICENSEKEY: ${{ secrets.LICENSE }}
