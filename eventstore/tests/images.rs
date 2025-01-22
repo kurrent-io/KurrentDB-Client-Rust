@@ -1,7 +1,10 @@
 #![allow(dead_code)]
 
-use std::collections::HashMap;
-use testcontainers::{core::WaitFor, Image};
+use std::{borrow::Cow, collections::HashMap};
+use testcontainers::{
+    core::{ContainerPort, Mount, WaitFor},
+    Image,
+};
 
 const DEFAULT_REGISTRY: &str = "docker.io";
 const DEFAULT_REPO: &str = "eventstore";
@@ -9,16 +12,14 @@ const DEFAULT_CONTAINER: &str = "eventstore";
 const DEFAULT_TAG: &str = "latest";
 
 #[derive(Debug, Clone)]
-pub struct ESDB {
-    registry: String,
+pub struct EventStoreDB {
+    name: String,
     tag: String,
-    repo: String,
-    container: String,
     env_vars: HashMap<String, String>,
-    vol_vars: HashMap<String, String>,
+    mounts: Vec<Mount>,
 }
 
-impl ESDB {
+impl EventStoreDB {
     pub fn insecure_mode(mut self) -> Self {
         self.env_vars
             .insert("EVENTSTORE_INSECURE".to_string(), "true".to_string());
@@ -52,10 +53,10 @@ impl ESDB {
             let mut certs = std::env::current_dir().unwrap();
             certs.push("certs");
 
-            self.vol_vars.insert(
+            self.mounts.push(Mount::volume_mount(
                 certs.as_path().display().to_string(),
                 "/etc/eventstore/certs".to_string(),
-            );
+            ));
 
             self
         } else {
@@ -75,8 +76,10 @@ impl ESDB {
     }
 
     pub fn attach_volume_to_db_directory(mut self, volume: String) -> Self {
-        self.vol_vars
-            .insert(volume, "/var/lib/eventstore".to_string());
+        self.mounts.push(Mount::volume_mount(
+            volume,
+            "/var/lib/eventstore".to_string(),
+        ));
 
         self
     }
@@ -129,35 +132,35 @@ impl ESDB {
     }
 }
 
-impl Image for ESDB {
-    type Args = ();
-
-    fn name(&self) -> String {
-        format!("{}/{}/{}", self.registry, self.repo, self.container)
+impl Image for EventStoreDB {
+    fn name(&self) -> &str {
+        &self.name
     }
 
-    fn tag(&self) -> String {
-        self.tag.clone()
+    fn tag(&self) -> &str {
+        &self.tag
     }
 
     fn ready_conditions(&self) -> Vec<WaitFor> {
         vec![WaitFor::message_on_stdout("SPARTA!")]
     }
 
-    fn env_vars(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.env_vars.iter())
+    fn env_vars(
+        &self,
+    ) -> impl IntoIterator<Item = (impl Into<Cow<'_, str>>, impl Into<Cow<'_, str>>)> {
+        self.env_vars.iter()
     }
 
-    fn volumes(&self) -> Box<dyn Iterator<Item = (&String, &String)> + '_> {
-        Box::new(self.vol_vars.iter())
+    fn mounts(&self) -> impl IntoIterator<Item = &Mount> {
+        self.mounts.iter()
     }
 
-    fn expose_ports(&self) -> Vec<u16> {
-        vec![2_113]
+    fn expose_ports(&self) -> &[ContainerPort] {
+        &[ContainerPort::Tcp(2_113)]
     }
 }
 
-impl Default for ESDB {
+impl Default for EventStoreDB {
     fn default() -> Self {
         let registry = option_env!("ESDB_DOCKER_REGISTRY").unwrap_or(DEFAULT_REGISTRY);
         let tag = option_env!("ESDB_DOCKER_CONTAINER_VERSION").unwrap_or(DEFAULT_TAG);
@@ -169,14 +172,11 @@ impl Default for ESDB {
             "EVENTSTORE_GOSSIP_ON_SINGLE_NODE".to_string(),
             "true".to_string(),
         );
-
-        ESDB {
-            registry: registry.to_string(),
+        EventStoreDB {
+            name: format!("{}/{}/{}", registry, repo, container),
             tag: tag.to_string(),
-            repo: repo.to_string(),
-            container: container.to_string(),
             env_vars,
-            vol_vars: HashMap::new(),
+            mounts: vec![],
         }
     }
 }

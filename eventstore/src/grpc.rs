@@ -911,7 +911,10 @@ impl NodeConnection {
             loop {
                 if let Some(selected_node) = selected_node.take() {
                     let uri = self.settings.to_hyper_uri(&selected_node);
-                    debug!("Before calling server features endpoint...");
+                    debug!(
+                        "Before calling server features endpoint on {}:{}...",
+                        selected_node.host, selected_node.port
+                    );
                     let server_info = match tokio::time::timeout(
                         self.settings.gossip_timeout(),
                         crate::server_features::supported_methods(&self.client, uri.clone()),

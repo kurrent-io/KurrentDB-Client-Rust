@@ -7,8 +7,7 @@ use crate::common::{fresh_stream_id, generate_events};
 use eventstore::{Client, ClientSettings};
 use futures::channel::oneshot;
 use std::time::Duration;
-use testcontainers::clients::Cli;
-use testcontainers::core::RunnableImage;
+use testcontainers::{core::ContainerPort, runners::AsyncRunner, ImageExt};
 use tracing::{debug, error};
 use tracing_subscriber::EnvFilter;
 
@@ -198,20 +197,19 @@ enum Topologies {
 
 async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<()> {
     let test = test.into();
-    let docker = Cli::default();
     let mut container_port = 2_113;
 
     let predifined_client = match topology {
         Topologies::SingleNode => {
             let secure_mode = matches!(std::option_env!("SECURE"), Some("true"));
-
-            let image = images::ESDB::default()
-                .secure_mode(secure_mode  || test.is_plugin_related())
+            let container = images::EventStoreDB::default()
+                .secure_mode(secure_mode || test.is_plugin_related())
                 .forward_eventstore_env_variables(test.is_plugin_related())
-                .enable_projections();
-            let container = docker.run(image);
+                .enable_projections()
+                .start()
+                .await?;
 
-            container_port = container.get_host_port_ipv4(2_113);
+            container_port = container.get_host_port_ipv4(2_113).await?;
             let settings = if secure_mode {
                 format!(
                     "esdb://admin:changeit@localhost:{}?defaultDeadline=60000&tlsVerifyCert=false",
@@ -227,14 +225,14 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
             }?;
 
             wait_node_is_alive(&settings, container_port).await?;
-            Client::new(settings.clone())?
+            Client::new(settings)?
         }
 
         Topologies::Cluster => {
             let settings = "esdb://admin:changeit@localhost:2111,localhost:2112,localhost:2113?tlsVerifyCert=false&nodePreference=leader&maxdiscoverattempts=50&defaultDeadline=60000"
                 .parse::<ClientSettings>()?;
 
-            let client = Client::new(settings.clone())?;
+            let client = Client::new(settings)?;
 
             // Those pre-checks are put in place to avoid test flakiness. In essence, those functions use
             // features we test later on.
@@ -247,14 +245,18 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
     let result = match test {
         Tests::Api(test) => match test {
             ApiTests::Streams => api::streams::tests(predifined_client).await,
-            ApiTests::PersistentSubscriptions => api::persistent_subscriptions::tests(predifined_client).await,
+            ApiTests::PersistentSubscriptions => {
+                api::persistent_subscriptions::tests(predifined_client).await
+            }
             ApiTests::Projections => api::projections::tests(predifined_client).await,
             ApiTests::Operations => api::operations::tests(predifined_client).await,
-        }
+        },
 
         Tests::Plugins(test) => match test {
-            PluginTests::UserCertificates => plugins::user_certificates::tests(container_port).await,
-        }
+            PluginTests::UserCertificates => {
+                plugins::user_certificates::tests(container_port).await
+            }
+        },
     };
 
     result?;
@@ -311,7 +313,7 @@ async fn single_node_discover_error() -> eyre::Result<()> {
     let settings = format!("esdb://noserver:{}", 2_113).parse()?;
     let client = Client::new(settings)?;
     let stream_id = fresh_stream_id("wont-be-created");
-    let events = generate_events("wont-be-written".to_string(), 5);
+    let events = generate_events("wont-be-written", 5);
 
     let result = client
         .append_to_stream(stream_id, &Default::default(), events)
@@ -327,12 +329,15 @@ async fn single_node_discover_error() -> eyre::Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
     let volume = create_unique_volume()?;
-    let docker = Cli::default();
-    let image = images::ESDB::default()
+    let image = images::EventStoreDB::default()
         .insecure_mode()
         .attach_volume_to_db_directory(volume);
-    let image_with_args = RunnableImage::from((image.clone(), ())).with_mapped_port((3_113, 2_113));
-    let container = docker.run(image_with_args);
+
+    let container = image
+        .clone()
+        .with_mapped_port(3_113, ContainerPort::Tcp(2_113))
+        .start()
+        .await?;
 
     let settings =
         format!("esdb://admin:changeit@localhost:{}?tls=false", 3_113).parse::<ClientSettings>()?;
@@ -369,22 +374,23 @@ async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
         tx.send(count).unwrap();
     });
 
-    let events = generate_events("reconnect".to_string(), 3);
+    let events = generate_events("reconnect", 3);
 
     let _ = client
         .append_to_stream(stream_name.as_str(), &Default::default(), events)
         .await?;
 
-    container.stop();
-    debug!("Server is stopped");
-    let image_with_args = RunnableImage::from((image, ())).with_mapped_port((3_113, 2_113));
-    debug!("Server is restarting...");
-    let _container = docker.run(image_with_args);
+    container.stop().await?;
+    debug!("Server is stopped, restarting...");
+    let _container = image
+        .with_mapped_port(3_113, ContainerPort::Tcp(2_113))
+        .start()
+        .await?;
 
     wait_node_is_alive(&cloned_setts, 3_113).await?;
     debug!("Server is up again");
 
-    let events = generate_events("reconnect".to_string(), 3);
+    let events = generate_events("reconnect", 3);
 
     let _ = client
         .append_to_stream(stream_name.as_str(), &Default::default(), events)
