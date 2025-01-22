@@ -199,17 +199,23 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
     let test = test.into();
     let mut container_port = 2_113;
 
+    // we need to own the container otherwise RAII will drop it and you would lose hours figuring
+    // out why the tests are not working anymore. It's because you totally forgot about that. So
+    // with this long comment, I want to make sure it doesn't happen again.
+    let mut _container = None;
+
     let predifined_client = match topology {
         Topologies::SingleNode => {
             let secure_mode = matches!(std::option_env!("SECURE"), Some("true"));
-            let container = images::EventStoreDB::default()
+            let temp = images::EventStoreDB::default()
                 .secure_mode(secure_mode || test.is_plugin_related())
                 .forward_eventstore_env_variables(test.is_plugin_related())
                 .enable_projections()
                 .start()
                 .await?;
 
-            container_port = container.get_host_port_ipv4(2_113).await?;
+            container_port = temp.get_host_port_ipv4(2_113).await?;
+            _container = Some(temp);
             let settings = if secure_mode {
                 format!(
                     "esdb://admin:changeit@localhost:{}?defaultDeadline=60000&tlsVerifyCert=false",
