@@ -73,7 +73,7 @@ ctor = "0.2"
 
 [dev-dependencies.tracing-subscriber]
 version = "0.3"
-features = ["env-filter"]
+features = ["env-filter", "time", "tracing-log"]
 
 [package.metadata.docs.rs]
 all-features = true

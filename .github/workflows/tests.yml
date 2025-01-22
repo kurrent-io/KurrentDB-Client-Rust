@@ -13,8 +13,7 @@ on:
 
 env:
   CARGO_TERM_COLOR: always
-  RUST_LOG: eventstore=debug,integration=debug,testcontainers=debug
-  NEXTEST_FAILURE_OUTPUT: final
+  NEXTEST_FAILURE_OUTPUT: immediate
   NEXTEST_HIDE_PROGRESS_BAR: true
 
 jobs:

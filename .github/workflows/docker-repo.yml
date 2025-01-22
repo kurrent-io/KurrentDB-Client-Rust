@@ -24,6 +24,7 @@ jobs:
   provide_docker:
     runs-on: ubuntu-latest
     outputs:
+      docker_registry: ${{ steps.set_docker.outputs.docker_registry }}
       docker_repo: ${{ steps.set_docker.outputs.docker_repo }}
       docker_container: ${{ steps.set_docker.outputs.docker_container }}
     steps:
