@@ -55,7 +55,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [previous-lts, lts, latest, ci]
+        version: [previous-lts, lts, latest]
 
     uses: ./.github/workflows/tests.yml
     with:
