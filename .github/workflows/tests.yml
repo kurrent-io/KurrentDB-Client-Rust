@@ -172,4 +172,4 @@ jobs:
           ESDB_DOCKER_REPO: eventstore # ${{ needs.provide_docker.outputs.docker_repo }}
           ESDB_DOCKER_CONTAINER: eventstore # ${{ needs.provide_docker.outputs.docker_container }}
           ESDB_DOCKER_CONTAINER_VERSION: lts # ${{ inputs.esdb_version }}
-          EVENTSTORE__LICENSING__LICENSEKEY: ${{ secrets.LICENSE }}
+          EVENTSTORE__LICENSING__LICENSEKEY: ${{ secrets.KURRENTDB_TEST_LICENSE_KEY }}
