@@ -160,7 +160,7 @@ jobs:
 
       - name: Set the plugins environment variables
         run: |
-          export eventstore__${{ matrix.plugins.name }}__enabled=true >> $GITHUB_ENV
+          echo "eventstore__${{ matrix.plugins.name }}__enabled=true" >> $GITHUB_ENV
 
       - name: Run test
         run: cargo nextest run plugin_${{ matrix.plugins.name }}
