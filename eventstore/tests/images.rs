@@ -53,7 +53,7 @@ impl EventStoreDB {
             let mut certs = std::env::current_dir().unwrap();
             certs.push("certs");
 
-            self.mounts.push(Mount::volume_mount(
+            self.mounts.push(Mount::bind_mount(
                 certs.as_path().display().to_string(),
                 "/etc/eventstore/certs".to_string(),
             ));
@@ -76,10 +76,8 @@ impl EventStoreDB {
     }
 
     pub fn attach_volume_to_db_directory(mut self, volume: String) -> Self {
-        self.mounts.push(Mount::volume_mount(
-            volume,
-            "/var/lib/eventstore".to_string(),
-        ));
+        self.mounts
+            .push(Mount::bind_mount(volume, "/var/lib/eventstore".to_string()));
 
         self
     }

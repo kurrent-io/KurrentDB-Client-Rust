@@ -134,7 +134,7 @@ jobs:
       matrix:
         plugins:
           - name: usercertificates
-          - setup: docker compose --file configure-user-certs-for-tests.yml up
+            setup: docker compose --file configure-user-certs-for-tests.yml up
 
     runs-on: ubuntu-latest
     # date: Jan 22nd, 2025

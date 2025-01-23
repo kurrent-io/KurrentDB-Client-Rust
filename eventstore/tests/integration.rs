@@ -13,7 +13,9 @@ use tracing_subscriber::EnvFilter;
 
 fn configure_logging() {
     tracing_subscriber::fmt::fmt()
-        .with_env_filter(EnvFilter::new("integration=debug,eventstore=debug,testcontainers=debug"))
+        .with_env_filter(EnvFilter::new(
+            "integration=debug,eventstore=debug,testcontainers=debug",
+        ))
         .with_file(true)
         .with_line_number(true)
         .with_target(true)
