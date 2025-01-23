@@ -163,8 +163,8 @@ enum Tests {
 }
 
 impl Tests {
-    fn is_plugin_related(&self) -> bool {
-        matches!(self, Tests::Plugins(_))
+    fn is_user_certificates_related(&self) -> bool {
+        matches!(self, Tests::Plugins(PluginTests::UserCertificates))
     }
 }
 
@@ -208,10 +208,11 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
 
     let predifined_client = match topology {
         Topologies::SingleNode => {
-            let secure_mode = matches!(std::option_env!("SECURE"), Some("true"));
+            let secure_mode = matches!(std::option_env!("SECURE"), Some("true"))
+                || test.is_user_certificates_related();
             let temp = images::EventStoreDB::default()
-                .secure_mode(secure_mode || test.is_plugin_related())
-                .forward_eventstore_env_variables(test.is_plugin_related())
+                .secure_mode(secure_mode)
+                .forward_eventstore_env_variables(test.is_user_certificates_related())
                 .enable_projections()
                 .start()
                 .await?;

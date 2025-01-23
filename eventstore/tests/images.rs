@@ -89,14 +89,11 @@ impl EventStoreDB {
 
         for (key, value) in std::env::vars_os() {
             if let Some((key, value)) = key.to_str().zip(value.to_str()) {
-                let key = key.to_lowercase();
-                let value = value.to_lowercase();
-
-                if !key.starts_with("eventstore") {
+                if !key.to_lowercase().starts_with("eventstore") {
                     continue;
                 }
 
-                self.env_vars.insert(key, value);
+                self.env_vars.insert(key.to_string(), value.to_string());
             }
         }
 

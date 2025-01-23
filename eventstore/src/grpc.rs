@@ -2,6 +2,7 @@ use rustls::pki_types::pem::PemObject;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
+use std::sync::Once;
 use std::time::Duration;
 use tracing::{debug, error, info, warn};
 
@@ -805,6 +806,8 @@ pub(crate) struct HandleInfo {
     pub(crate) server_info: ServerInfo,
 }
 
+static RUSTLS_INIT: Once = Once::new();
+
 impl NodeConnection {
     fn new(settings: ClientSettings) -> Self {
         let mut roots = rustls::RootCertStore::empty();
@@ -814,9 +817,11 @@ impl NodeConnection {
             roots.add(cert).unwrap();
         }
 
-        rustls::crypto::aws_lc_rs::default_provider()
-            .install_default()
-            .expect("failed to install rustls crypto provider");
+        RUSTLS_INIT.call_once(|| {
+            rustls::crypto::aws_lc_rs::default_provider()
+                .install_default()
+                .expect("failed to install rustls crypto provider");
+        });
 
         let tls = tokio_rustls::rustls::ClientConfig::builder().with_root_certificates(roots);
 
