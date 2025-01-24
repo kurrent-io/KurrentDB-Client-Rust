@@ -1,7 +1,10 @@
+use rustls::pki_types::pem::PemObject;
 use std::cmp::Ordering;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
+use std::sync::Once;
 use std::time::Duration;
+use tracing::{debug, error, info, warn};
 
 use futures::Future;
 use hyper_rustls::HttpsConnector;
@@ -11,7 +14,7 @@ use rand::rngs::SmallRng;
 use rand::seq::SliceRandom;
 use rand::{RngCore, SeedableRng};
 use rustls::client::danger::{HandshakeSignatureValid, ServerCertVerified};
-use rustls::pki_types::{CertificateDer, ServerName, UnixTime};
+use rustls::pki_types::{CertificateDer, PrivateKeyDer, ServerName, UnixTime};
 use rustls::{DigitallySignedStruct, SignatureScheme};
 use serde::de::{Error, Visitor};
 use serde::{Deserialize, Serialize};
@@ -81,8 +84,6 @@ impl rustls::client::danger::ServerCertVerifier for NoVerification {
 
 #[test]
 fn test_connection_string() {
-    pretty_env_logger::init();
-
     #[derive(Debug, Serialize, Deserialize)]
     struct Mockup {
         string: String,
@@ -360,6 +361,8 @@ pub struct ClientSettings {
     )]
     pub(crate) default_deadline: Option<Duration>,
     pub(crate) connection_name: Option<String>,
+    pub(crate) user_cert_file: Option<String>,
+    pub(crate) user_key_file: Option<String>,
 }
 
 impl ClientSettings {
@@ -405,6 +408,12 @@ impl ClientSettings {
         format!("{}://{}:{}", scheme, endpoint.host, endpoint.port)
             .parse()
             .unwrap()
+    }
+
+    pub fn user_certificate(&self) -> Option<(&String, &String)> {
+        self.user_cert_file
+            .as_ref()
+            .zip(self.user_key_file.as_ref())
     }
 
     pub(crate) fn to_hyper_uri(&self, endpoint: &Endpoint) -> hyper::Uri {
@@ -614,11 +623,26 @@ fn parse_from_url(
                 result.connection_name = Some(value.to_string());
             }
 
+            "usercertfile" => {
+                result.user_cert_file = Some(value.to_string());
+            }
+
+            "userkeyfile" => {
+                result.user_key_file = Some(value.to_string());
+            }
+
             ignored => {
                 warn!("Ignored connection string parameter: {}", ignored);
                 continue;
             }
         }
+    }
+
+    if result.user_key_file.is_none() ^ result.user_cert_file.is_none() {
+        return Err(ClientSettingsParseError {
+            message: "Invalid user certificate settings. Both userCertFile and userKeyFile must be provided".to_string(),
+            error: None,
+        });
     }
 
     Ok(result)
@@ -737,6 +761,8 @@ impl Default for ClientSettings {
             keep_alive_timeout: Duration::from_millis(self::defaults::KEEP_ALIVE_TIMEOUT_IN_MS),
             default_deadline: None,
             connection_name: None,
+            user_cert_file: None,
+            user_key_file: None,
         }
     }
 }
@@ -759,7 +785,7 @@ struct NodeConnection {
     previous_candidates: Option<Vec<Member>>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 enum ClusterMode {
     Dns(DnsClusterSettings),
     Seeds(Vec<Endpoint>),
@@ -780,6 +806,8 @@ pub(crate) struct HandleInfo {
     pub(crate) server_info: ServerInfo,
 }
 
+static RUSTLS_INIT: Once = Once::new();
+
 impl NodeConnection {
     fn new(settings: ClientSettings) -> Self {
         let mut roots = rustls::RootCertStore::empty();
@@ -789,13 +817,26 @@ impl NodeConnection {
             roots.add(cert).unwrap();
         }
 
-        rustls::crypto::aws_lc_rs::default_provider()
-            .install_default()
-            .expect("failed to install rustls crypto provider");
+        RUSTLS_INIT.call_once(|| {
+            rustls::crypto::aws_lc_rs::default_provider()
+                .install_default()
+                .expect("failed to install rustls crypto provider");
+        });
 
-        let mut tls = tokio_rustls::rustls::ClientConfig::builder()
-            .with_root_certificates(roots)
-            .with_no_client_auth();
+        let tls = tokio_rustls::rustls::ClientConfig::builder().with_root_certificates(roots);
+
+        let mut tls = if let Some((cert, key)) = settings.user_certificate() {
+            let cert_chain: Result<Vec<CertificateDer<'_>>, _> =
+                CertificateDer::pem_file_iter(cert).unwrap().collect();
+
+            tls.with_client_auth_cert(
+                cert_chain.unwrap(),
+                PrivateKeyDer::from_pem_file(key).unwrap(),
+            )
+            .unwrap()
+        } else {
+            tls.with_no_client_auth()
+        };
 
         if !settings.tls_verify_cert && settings.secure {
             tls.dangerous()
@@ -847,6 +888,7 @@ impl NodeConnection {
         }
     }
 
+    #[tracing::instrument(skip(self, request))]
     async fn next(
         &mut self,
         mut request: Option<NodeRequest>,
@@ -874,7 +916,10 @@ impl NodeConnection {
             loop {
                 if let Some(selected_node) = selected_node.take() {
                     let uri = self.settings.to_hyper_uri(&selected_node);
-                    debug!("Before calling server features endpoint...");
+                    debug!(
+                        "Before calling server features endpoint on {}:{}...",
+                        selected_node.host, selected_node.port
+                    );
                     let server_info = match tokio::time::timeout(
                         self.settings.gossip_timeout(),
                         crate::server_features::supported_methods(&self.client, uri.clone()),
@@ -1186,11 +1231,13 @@ pub(crate) fn handle_error(sender: &UnboundedSender<Msg>, connection_id: Uuid, e
     }
 }
 
+#[derive(Debug)]
 struct Member {
     endpoint: Endpoint,
     state: VNodeState,
 }
 
+#[tracing::instrument(skip(conn_setts, client, rng))]
 async fn node_selection(
     conn_setts: &ClientSettings,
     mode: &ClusterMode,

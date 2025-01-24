@@ -409,3 +409,22 @@ password = "bar"
 [[mockups.expected.hosts]]
 host = "eventstore_db"
 port = 2_115
+
+[[mockups]]
+string = "esdb://localhost?userCertFile=foo&userKeyFile=bar"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+user_cert_file = "foo"
+user_key_file = "bar"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+

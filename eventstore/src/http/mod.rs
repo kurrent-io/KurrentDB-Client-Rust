@@ -1,3 +1,4 @@
+use tracing::error;
 pub mod persistent_subscriptions;
 
 pub fn http_configure_auth(

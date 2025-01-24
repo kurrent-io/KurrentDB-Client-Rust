@@ -1,6 +1,7 @@
 use eventstore::operations;
 use eventstore::operations::StatsOptions;
 use std::time::Duration;
+use tracing::debug;
 
 fn generate_login(names: &mut names::Generator<'_>) -> String {
     names.next().unwrap().replace("-", "_")

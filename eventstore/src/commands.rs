@@ -7,6 +7,7 @@ use futures::TryStreamExt;
 use nom::AsBytes;
 use tokio::sync::mpsc;
 use tonic::{Request, Streaming};
+use tracing::{debug, error, warn};
 
 use persistent::persistent_subscriptions_client::PersistentSubscriptionsClient;
 use streams::streams_client::StreamsClient;

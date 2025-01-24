@@ -7,6 +7,7 @@ use eventstore::{
 use futures::channel::oneshot;
 use std::collections::HashMap;
 use std::time::Duration;
+use tracing::{debug, warn};
 
 async fn test_write_events(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("write_events");
@@ -219,7 +220,6 @@ async fn test_delete_stream(client: &Client) -> eventstore::Result<()> {
 
 // We write an event into a stream then hard delete that stream.
 async fn test_tombstone_stream(client: &Client) -> eventstore::Result<()> {
-    let _ = pretty_env_logger::try_init();
     let stream_id = fresh_stream_id("tombstone");
     let events = generate_events("tombstone-test".to_string(), 1);
 
