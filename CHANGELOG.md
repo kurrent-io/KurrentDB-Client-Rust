@@ -12,6 +12,9 @@ All notable changes to this project will be documented in this file.
 ### Fixed
 - Address latest compiler linting suggestions. [EventStoreDB-Client-Rust#181](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/181)
 
+### Added
+- support providing x.509 certificate for user authentication. [EventStoreDB-Client-Rust#189](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/189)
+
 ## [3.0.0] - 2024-02-29
 ### Changed
 - Decrease allocation due to stream name manipulation. [EventStoreDB-Client-Rust#171](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/171)
