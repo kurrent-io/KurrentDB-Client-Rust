@@ -73,7 +73,9 @@ pub fn read_stream(client: Client, mut cx: FunctionContext) -> JsResult<JsPromis
         Err(e) => cx.throw_error(e.to_string())?,
     };
 
-    let require_leader = params.get::<JsBoolean, _, _>(&mut cx, "requiresLeader")?.value(&mut cx);
+    let require_leader = params
+        .get::<JsBoolean, _, _>(&mut cx, "requiresLeader")?
+        .value(&mut cx);
     let options = options.requires_leader(require_leader);
 
     let (deferred, promise) = cx.promise();
@@ -184,12 +186,11 @@ where
     let mut data = cx.array_buffer(event.data.len())?;
     data.as_mut_slice(cx).copy_from_slice(&event.data);
 
-    let mut metadata = cx.array_buffer(event.metadata.len())?;
-    // metadata
-    //     .as_mut_slice(cx)
-    //     .copy_from_slice(&event.custom_metadata);
-    //
-    //
+    let mut metadata = cx.array_buffer(event.custom_metadata.len())?;
+    metadata
+        .as_mut_slice(cx)
+        .copy_from_slice(&event.custom_metadata);
+
     let position = cx.empty_object();
     let commit = JsBigInt::from_u64(cx, event.position.commit);
     let prepare = JsBigInt::from_u64(cx, event.position.prepare);
