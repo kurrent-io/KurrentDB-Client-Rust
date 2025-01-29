@@ -7,7 +7,7 @@ use neon::{
     object::Object,
     prelude::{Context, FunctionContext},
     result::JsResult,
-    types::{buffer::TypedArray, JsBigInt, JsFunction, JsObject, JsPromise, JsString},
+    types::{buffer::TypedArray, JsBigInt, JsBoolean, JsFunction, JsObject, JsPromise, JsString},
 };
 use tokio::sync::Mutex;
 
@@ -73,6 +73,9 @@ pub fn read_stream(client: Client, mut cx: FunctionContext) -> JsResult<JsPromis
         Err(e) => cx.throw_error(e.to_string())?,
     };
 
+    let require_leader = params.get::<JsBoolean, _, _>(&mut cx, "requiresLeader")?.value(&mut cx);
+    let options = options.requires_leader(require_leader);
+
     let (deferred, promise) = cx.promise();
     let channel = cx.channel();
 
@@ -87,19 +90,11 @@ pub fn read_stream(client: Client, mut cx: FunctionContext) -> JsResult<JsPromis
     Ok(promise)
 }
 
-fn async_iterator_object<'a, C>(mut cx: C, stream: ReadStream) -> JsResult<'a, JsObject>
+fn async_iterator_object<'a, C>(cx: C, stream: ReadStream) -> JsResult<'a, JsObject>
 where
     C: Context<'a>,
 {
-    let obj = cx.empty_object();
-
-    let stream = Arc::new(Mutex::new(stream));
-
-    let constructor = JsFunction::new(&mut cx, move |cx| async_iterator_impl(cx, stream.clone()))?;
-
-    obj.set(&mut cx, "[Symbol.asyncIterator]", constructor)?;
-
-    Ok(obj)
+    async_iterator_impl(cx, Arc::new(Mutex::new(stream)))
 }
 
 fn async_iterator_impl<'a, C>(mut cx: C, stream: Arc<Mutex<ReadStream>>) -> JsResult<'a, JsObject>
@@ -188,10 +183,11 @@ where
     data.as_mut_slice(cx).copy_from_slice(&event.data);
 
     let mut metadata = cx.array_buffer(event.metadata.len())?;
-    metadata
-        .as_mut_slice(cx)
-        .copy_from_slice(&event.custom_metadata);
-
+    // metadata
+    //     .as_mut_slice(cx)
+    //     .copy_from_slice(&event.custom_metadata);
+    //
+    //
     let position = cx.empty_object();
     let commit = JsBigInt::from_u64(cx, event.position.commit);
     let prepare = JsBigInt::from_u64(cx, event.position.prepare);
