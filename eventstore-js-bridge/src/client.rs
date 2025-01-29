@@ -115,10 +115,10 @@ where
             deferred.settle_with(&channel, |mut cx| {
                 let result = result.or_else(|e| cx.throw_error(e.to_string()))?;
                 let item = cx.empty_object();
-                let value = cx.empty_object();
                 let mut done = true;
 
                 if let Some(mut event) = result {
+                    let value = cx.empty_object();
                     done = false;
 
                     if let Some(event) = event.event.take() {
@@ -144,9 +144,11 @@ where
                         let null = cx.null();
                         value.set(&mut cx, "commitPosition", null)?;
                     }
+
+                    item.set(&mut cx, "value", value)?;
                 } else {
                     let undefined = cx.undefined();
-                    value.set(&mut cx, "value", undefined)?;
+                    item.set(&mut cx, "value", undefined)?;
                 }
 
                 let done = cx.boolean(done);
