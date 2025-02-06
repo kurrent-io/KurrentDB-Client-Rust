@@ -428,3 +428,20 @@ user_key_file = "bar"
 host = "localhost"
 port = 2_113
 
+[[mockups]]
+string = "esdb://localhost?tlsCaFile=foo"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+tls_ca_file = "foo"
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
