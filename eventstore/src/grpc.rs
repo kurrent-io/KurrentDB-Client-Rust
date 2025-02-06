@@ -840,7 +840,8 @@ impl NodeConnection {
                 roots.add(cert).unwrap();
             }
         } else {
-            for cert in rustls_native_certs::load_native_certs().expect("could not load platform certs")
+            for cert in
+                rustls_native_certs::load_native_certs().expect("could not load platform certs")
             {
                 roots.add(cert).unwrap();
             }

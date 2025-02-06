@@ -1,8 +1,8 @@
 mod api;
 mod common;
 mod images;
-mod plugins;
 mod misc;
+mod plugins;
 
 use crate::common::{fresh_stream_id, generate_events};
 use eventstore::{Client, ClientSettings};
@@ -161,7 +161,7 @@ async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<(
 enum Tests {
     Api(ApiTests),
     Plugins(PluginTests),
-    Misc(MiscTests)
+    Misc(MiscTests),
 }
 
 impl Tests {
@@ -198,7 +198,9 @@ enum MiscTests {
 }
 
 impl From<MiscTests> for Tests {
-    fn from(test: MiscTests) -> Self { Tests::Misc(test) }
+    fn from(test: MiscTests) -> Self {
+        Tests::Misc(test)
+    }
 }
 
 enum Topologies {
@@ -278,7 +280,7 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
         },
 
         Tests::Misc(test) => match test {
-            MiscTests::RootCertificates => misc::root_certificates::tests(container_port).await
+            MiscTests::RootCertificates => misc::root_certificates::tests(container_port).await,
         },
     };
 
