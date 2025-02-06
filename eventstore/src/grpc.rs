@@ -361,6 +361,7 @@ pub struct ClientSettings {
     )]
     pub(crate) default_deadline: Option<Duration>,
     pub(crate) connection_name: Option<String>,
+    pub(crate) tls_ca_file: Option<String>,
     pub(crate) user_cert_file: Option<String>,
     pub(crate) user_key_file: Option<String>,
 }
@@ -414,6 +415,10 @@ impl ClientSettings {
         self.user_cert_file
             .as_ref()
             .zip(self.user_key_file.as_ref())
+    }
+
+    pub fn tls_ca_file(&self) -> Option<&String> {
+        self.tls_ca_file.as_ref()
     }
 
     pub(crate) fn to_hyper_uri(&self, endpoint: &Endpoint) -> hyper::Uri {
@@ -631,6 +636,10 @@ fn parse_from_url(
                 result.user_key_file = Some(value.to_string());
             }
 
+            "tlscafile" => {
+                result.tls_ca_file = Some(value.to_string());
+            }
+
             ignored => {
                 warn!("Ignored connection string parameter: {}", ignored);
                 continue;
@@ -643,6 +652,10 @@ fn parse_from_url(
             message: "Invalid user certificate settings. Both userCertFile and userKeyFile must be provided".to_string(),
             error: None,
         });
+    }
+
+    if !result.secure && result.tls_ca_file.is_some() {
+        warn!("tlsCAFile passed to insecure connection. Will be ignored.");
     }
 
     Ok(result)
@@ -763,6 +776,7 @@ impl Default for ClientSettings {
             connection_name: None,
             user_cert_file: None,
             user_key_file: None,
+            tls_ca_file: None,
         }
     }
 }
@@ -812,16 +826,25 @@ impl NodeConnection {
     fn new(settings: ClientSettings) -> Self {
         let mut roots = rustls::RootCertStore::empty();
 
-        for cert in rustls_native_certs::load_native_certs().expect("could not load platform certs")
-        {
-            roots.add(cert).unwrap();
-        }
-
         RUSTLS_INIT.call_once(|| {
             rustls::crypto::aws_lc_rs::default_provider()
                 .install_default()
                 .expect("failed to install rustls crypto provider");
         });
+
+        if let Some(cert) = settings.tls_ca_file() {
+            let cert_chain: Result<Vec<CertificateDer<'_>>, _> =
+                CertificateDer::pem_file_iter(cert).unwrap().collect();
+
+            for cert in cert_chain.unwrap() {
+                roots.add(cert).unwrap();
+            }
+        } else {
+            for cert in rustls_native_certs::load_native_certs().expect("could not load platform certs")
+            {
+                roots.add(cert).unwrap();
+            }
+        }
 
         let tls = tokio_rustls::rustls::ClientConfig::builder().with_root_certificates(roots);
 
