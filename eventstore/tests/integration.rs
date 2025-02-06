@@ -2,6 +2,7 @@ mod api;
 mod common;
 mod images;
 mod plugins;
+mod misc;
 
 use crate::common::{fresh_stream_id, generate_events};
 use eventstore::{Client, ClientSettings};
@@ -160,6 +161,7 @@ async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<(
 enum Tests {
     Api(ApiTests),
     Plugins(PluginTests),
+    Misc(MiscTests)
 }
 
 impl Tests {
@@ -189,6 +191,14 @@ impl From<PluginTests> for Tests {
     fn from(test: PluginTests) -> Self {
         Tests::Plugins(test)
     }
+}
+
+enum MiscTests {
+    RootCertificates,
+}
+
+impl From<MiscTests> for Tests {
+    fn from(test: MiscTests) -> Self { Tests::Misc(test) }
 }
 
 enum Topologies {
@@ -266,6 +276,10 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
                 plugins::user_certificates::tests(container_port).await
             }
         },
+
+        Tests::Misc(test) => match test {
+            MiscTests::RootCertificates => misc::root_certificates::tests(container_port).await
+        },
     };
 
     result?;
@@ -295,6 +309,11 @@ async fn single_node_operations() -> eyre::Result<()> {
 #[tokio::test(flavor = "multi_thread")]
 async fn plugin_usercertificates() -> eyre::Result<()> {
     run_test(PluginTests::UserCertificates, Topologies::SingleNode).await
+}
+
+#[tokio::test(flavor = "multi_thread")]
+async fn root_certificates() -> eyre::Result<()> {
+    run_test(MiscTests::RootCertificates, Topologies::SingleNode).await
 }
 
 #[tokio::test(flavor = "multi_thread")]
