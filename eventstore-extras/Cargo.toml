@@ -1,6 +1,6 @@
 [package]
 name = "eventstore-extras"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2021"
 
 license = "MIT"
@@ -14,6 +14,6 @@ categories = ["database", "api-bindings"]
 
 [dependencies]
 # will move to version number once we got something stable.
-eventstore = { path = "../eventstore", version = "3.0.0" }
+eventstore = { path = "../eventstore", version = ">=3" }
 chrono = { version = "0.4", default-features = false }
 log = "0.4"

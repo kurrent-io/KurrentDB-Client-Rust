@@ -3,6 +3,7 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [4.0.0] - 2025-02-07
 ### Changed
 - Updated CI workflows to pull eventstore docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
 - Updated everywhere to pull es-gencert-cli from Cloudsmith [EventStoreDB-Client-Rust#179](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/179)
@@ -13,7 +14,8 @@ All notable changes to this project will be documented in this file.
 - Address latest compiler linting suggestions. [EventStoreDB-Client-Rust#181](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/181)
 
 ### Added
-- support providing x.509 certificate for user authentication. [EventStoreDB-Client-Rust#189](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/189)
+- Support providing x.509 certificate for user authentication. [EventStoreDB-Client-Rust#189](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/189)
+- Support custom root certificate. [EventStoreDB-Client-Rust#191](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/191)
 
 ## [3.0.0] - 2024-02-29
 ### Changed
