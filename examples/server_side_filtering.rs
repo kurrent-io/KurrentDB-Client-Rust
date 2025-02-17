@@ -136,7 +136,8 @@ pub async fn checkpoint_callback_with_interval(client: &Client) -> Result<()> {
             }
 
             SubscriptionEvent::Checkpoint(position) => {
-                println!("checkpoint taken at {}", position.prepare);
+                // Save commit position to a persistent store as a checkpoint
+                println!("checkpoint taken at {}", position.commit);
             }
 
             _ => {}
