@@ -116,7 +116,7 @@ async fn test_delete_persistent_subscription_to_all(
 
 async fn test_persistent_subscription(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("persistent_subscription");
-    let events = generate_events("persistent-subscription-test".to_string(), 5);
+    let events = generate_events("persistent-subscription-test", 5);
 
     client
         .create_persistent_subscription(stream_id.as_str(), "a_group_name", &Default::default())
@@ -140,7 +140,7 @@ async fn test_persistent_subscription(client: &Client) -> eventstore::Result<()>
         let mut count = 0usize;
         loop {
             let event = sub.next().await?;
-            sub.ack(event).await?;
+            sub.ack(&event).await?;
 
             count += 1;
 
@@ -152,7 +152,7 @@ async fn test_persistent_subscription(client: &Client) -> eventstore::Result<()>
         Ok::<usize, eventstore::Error>(count)
     });
 
-    let events = generate_events("es6-persistent-subscription-test".to_string(), 5);
+    let events = generate_events("es6-persistent-subscription-test", 5);
     let _ = client
         .append_to_stream(stream_id.as_str(), &Default::default(), events)
         .await?;
@@ -197,7 +197,7 @@ async fn test_persistent_subscription_to_all(
         let mut count = 0;
         for _ in 0..limit + 1 {
             let event = sub.next().await?;
-            sub.ack(event).await?;
+            sub.ack(&event).await?;
 
             count += 1;
 
@@ -228,7 +228,7 @@ async fn test_list_persistent_subscriptions(
     let group_name = "group_name";
     let mut expected_set = std::collections::HashSet::new();
 
-    while let Some(stream_name) = names.next() {
+    for stream_name in names.by_ref() {
         count += 1;
         client
             .create_persistent_subscription(stream_name.as_str(), &group_name, &Default::default())
@@ -265,7 +265,7 @@ async fn test_list_persistent_subscriptions_for_stream(
     let stream_name = names.next().unwrap();
     let mut expected_set = std::collections::HashSet::new();
 
-    while let Some(group_name) = names.next() {
+    for group_name in names.by_ref() {
         count += 1;
         client
             .create_persistent_subscription(
@@ -309,7 +309,7 @@ async fn test_list_persistent_subscriptions_to_all(
     let mut count = 0;
     let mut expected_set = std::collections::HashSet::new();
 
-    while let Some(group_name) = names.next() {
+    for group_name in names.by_ref() {
         count += 1;
         client
             .create_persistent_subscription_to_all(group_name.as_str(), &Default::default())
@@ -428,7 +428,7 @@ async fn test_replay_parked_messages(
         for _ in 0..event_count {
             let event = sub.next().await?;
 
-            sub.nack(event, eventstore::NakAction::Park, "because reasons")
+            sub.nack(&event, eventstore::NakAction::Park, "because reasons")
                 .await?;
         }
 
@@ -446,7 +446,7 @@ async fn test_replay_parked_messages(
             debug!("Waiting on parked event to be replayed...");
             let event = sub.next().await?;
             debug!("done.");
-            sub.ack(event).await?;
+            sub.ack(&event).await?;
         }
 
         Ok::<(), eventstore::Error>(())
@@ -491,7 +491,7 @@ async fn test_replay_parked_messages_to_all(
             let event = sub.next().await?;
 
             if event.get_original_stream_id() == stream_name.as_str() {
-                sub.nack(event, eventstore::NakAction::Park, "because reasons")
+                sub.nack(&event, eventstore::NakAction::Park, "because reasons")
                     .await?;
 
                 count += 1;
@@ -499,7 +499,7 @@ async fn test_replay_parked_messages_to_all(
                     break;
                 }
             } else {
-                sub.ack(event).await?;
+                sub.ack(&event).await?;
             }
         }
 
@@ -519,8 +519,8 @@ async fn test_replay_parked_messages_to_all(
             let event = sub.next().await?;
             debug!("done.");
 
-            let event_stream_id = event.event.as_ref().unwrap().stream_id.to_string();
-            sub.ack(event).await?;
+            let event_stream_id = event.event.as_ref().unwrap().stream_id();
+            sub.ack(&event).await?;
 
             if event_stream_id == stream_name.as_str() {
                 count += 1;
@@ -625,7 +625,7 @@ async fn test_persistent_subscription_info_with_connection_details(
     let ack_handle: tokio::task::JoinHandle<eventstore::Result<()>> = tokio::spawn(async move {
         loop {
             let event = sub.next().await?;
-            sub.ack(event).await?;
+            sub.ack(&event).await?;
         }
     });
 
@@ -641,7 +641,7 @@ async fn test_persistent_subscription_info_with_connection_details(
 
     assert_eq!(info.event_source, stream_name);
     assert_eq!(info.group_name, group_name);
-    assert_eq!(info.connections.is_empty(), false);
+    assert!(!info.connections.is_empty());
 
     append_handle.abort();
     ack_handle.abort();

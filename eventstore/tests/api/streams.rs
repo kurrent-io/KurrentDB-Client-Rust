@@ -11,7 +11,7 @@ use tracing::{debug, warn};
 
 async fn test_write_events(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("write_events");
-    let events = generate_events("write-events-test".to_string(), 3);
+    let events = generate_events("write-events-test", 3);
 
     let result = client
         .append_to_stream(stream_id, &Default::default(), events)
@@ -59,7 +59,7 @@ async fn test_read_all_stream_events(client: &Client) -> eventstore::Result<()> 
 // stream thoroughly.
 async fn test_read_stream_events(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("read_stream_events");
-    let events = generate_events("es6-read-stream-events-test".to_string(), 10);
+    let events = generate_events("es6-read-stream-events-test", 10);
 
     let _ = client
         .append_to_stream(stream_id.clone(), &Default::default(), events)
@@ -113,7 +113,7 @@ async fn test_read_stream_events_with_position(client: &Client) -> eventstore::R
 
 async fn test_read_stream_populates_log_position(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("read_stream_populates_log_position");
-    let events = generate_events("read_stream_populates_log_position".to_string(), 1);
+    let events = generate_events("read_stream_populates_log_position", 1);
 
     let write_result = client
         .append_to_stream(stream_id.clone(), &Default::default(), events)
@@ -137,7 +137,7 @@ async fn test_read_stream_populates_log_position(client: &Client) -> eventstore:
 
 async fn test_metadata(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("metadata");
-    let events = generate_events("metadata-test".to_string(), 5);
+    let events = generate_events("metadata-test", 5);
 
     let _ = client
         .append_to_stream(stream_id.as_str(), &Default::default(), events)
@@ -169,7 +169,7 @@ async fn test_metadata(client: &Client) -> eventstore::Result<()> {
 
 async fn test_metadata_not_exist(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("metadata_not_exist");
-    let events = generate_events("metadata-test-not-exist".to_string(), 5);
+    let events = generate_events("metadata-test-not-exist", 5);
 
     let _ = client
         .append_to_stream(stream_id.as_str(), &Default::default(), events)
@@ -203,7 +203,7 @@ async fn test_read_stream_events_non_existent(client: &Client) -> eventstore::Re
 // We write an event into a stream then soft delete that stream.
 async fn test_delete_stream(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("delete");
-    let events = generate_events("delete-test".to_string(), 1);
+    let events = generate_events("delete-test", 1);
 
     let _ = client
         .append_to_stream(stream_id.clone(), &Default::default(), events)
@@ -221,7 +221,7 @@ async fn test_delete_stream(client: &Client) -> eventstore::Result<()> {
 // We write an event into a stream then hard delete that stream.
 async fn test_tombstone_stream(client: &Client) -> eventstore::Result<()> {
     let stream_id = fresh_stream_id("tombstone");
-    let events = generate_events("tombstone-test".to_string(), 1);
+    let events = generate_events("tombstone-test", 1);
 
     let _ = client
         .append_to_stream(stream_id.clone(), &Default::default(), events)
@@ -251,8 +251,8 @@ async fn test_tombstone_stream(client: &Client) -> eventstore::Result<()> {
 // internal state value.
 async fn test_subscription(client: &Client) -> eyre::Result<()> {
     let stream_id = fresh_stream_id("catchup");
-    let events_before = generate_events("catchup-test-before".to_string(), 3);
-    let events_after = generate_events("catchup-test-after".to_string(), 3);
+    let events_before = generate_events("catchup-test-before", 3);
+    let events_after = generate_events("catchup-test-after", 3);
 
     let _ = client
         .append_to_stream(stream_id.as_str(), &Default::default(), events_before)
@@ -395,7 +395,7 @@ async fn test_batch_append(client: &Client) -> eventstore::Result<()> {
 
         let mut cpt = 0usize;
 
-        while let Some(_) = stream.next().await? {
+        while (stream.next().await?).is_some() {
             cpt += 1;
         }
 

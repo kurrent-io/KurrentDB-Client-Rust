@@ -102,14 +102,14 @@ async fn wait_node_is_alive(setts: &eventstore::ClientSettings, port: u16) -> ey
 // the cluster hasn't created the admin user yet, leading to failing the tests.
 async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<()> {
     fn can_retry(e: &eventstore::Error) -> bool {
-        match e {
+        matches!(
+            e,
             eventstore::Error::AccessDenied
-            | eventstore::Error::DeadlineExceeded
-            | eventstore::Error::ServerError(_)
-            | eventstore::Error::NotLeaderException(_)
-            | eventstore::Error::ResourceNotFound => true,
-            _ => false,
-        }
+                | eventstore::Error::DeadlineExceeded
+                | eventstore::Error::ServerError(_)
+                | eventstore::Error::NotLeaderException(_)
+                | eventstore::Error::ResourceNotFound
+        )
     }
     let mut count = 0;
 

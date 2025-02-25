@@ -1398,7 +1398,7 @@ impl PersistentSubscription {
         }
     }
 
-    pub async fn ack(&mut self, event: ResolvedEvent) -> crate::Result<()> {
+    pub async fn ack(&mut self, event: &ResolvedEvent) -> crate::Result<()> {
         self.ack_ids(vec![event.get_original_event().id]).await
     }
 
@@ -1429,7 +1429,7 @@ impl PersistentSubscription {
 
     pub async fn nack(
         &mut self,
-        event: ResolvedEvent,
+        event: &ResolvedEvent,
         action: NakAction,
         reason: impl AsRef<str>,
     ) -> crate::Result<()> {
