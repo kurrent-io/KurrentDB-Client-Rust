@@ -235,7 +235,7 @@ pub struct ReadEventResult {
 #[derive(Debug)]
 pub struct RecordedEvent {
     /// The event stream that events belongs to.
-    pub stream_id: String,
+    pub(crate) stream_id_raw: Bytes,
 
     /// Unique identifier representing this event.
     pub id: Uuid,
@@ -263,6 +263,12 @@ pub struct RecordedEvent {
 
     /// When the event was created in the database.
     pub created: DateTime<Utc>,
+}
+
+impl RecordedEvent {
+    pub fn stream_id(&self) -> &str {
+        unsafe { std::str::from_utf8_unchecked(&self.stream_id_raw) }
+    }
 }
 
 impl RecordedEvent {
@@ -308,7 +314,7 @@ impl ResolvedEvent {
 
     /// Returns the stream id of the original event.
     pub fn get_original_stream_id(&self) -> &str {
-        &self.get_original_event().stream_id
+        self.get_original_event().stream_id()
     }
 }
 

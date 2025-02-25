@@ -10,7 +10,7 @@ fn generate_login(names: &mut names::Generator<'_>) -> String {
 async fn test_gossip(client: &operations::Client) -> eventstore::Result<()> {
     let gossip = client.read_gossip().await?;
 
-    assert!(gossip.len() > 0);
+    assert!(!gossip.is_empty());
 
     Ok(())
 }

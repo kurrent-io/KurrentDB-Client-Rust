@@ -31,7 +31,7 @@ async fn connect_to_persistent_subscription_to_stream(client: &Client) -> events
     loop {
         let event = sub.next().await?;
         // Doing some productive work with the event...
-        sub.ack(event).await?;
+        sub.ack(&event).await?;
     }
     // #endregion subscribe-to-persistent-subscription-to-stream
 }
@@ -45,7 +45,7 @@ async fn connect_to_persistent_subscription_to_all(client: &Client) -> eventstor
     loop {
         let event = sub.next().await?;
         // Doing some productive work with the event...
-        sub.ack(event).await?;
+        sub.ack(&event).await?;
     }
     // #endregion subscribe-to-persistent-subscription-to-all
 }
@@ -77,7 +77,7 @@ async fn connect_to_persistent_subscription_with_manual_acks(
     loop {
         let event = sub.next().await?;
         // Doing some productive work with the event...
-        sub.ack(event).await?;
+        sub.ack(&event).await?;
     }
     // #endregion subscribe-to-persistent-subscription-with-manual-acks
 }

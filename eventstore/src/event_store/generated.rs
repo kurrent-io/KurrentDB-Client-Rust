@@ -5,7 +5,6 @@ use crate::{
     ResolvedEvent, RevisionOrPosition, StreamPosition, SystemConsumerStrategy, WriteResult,
 };
 use chrono::{DateTime, Utc};
-use nom::AsBytes;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
@@ -122,7 +121,7 @@ impl From<streams::append_resp::WrongExpectedVersion> for crate::Error {
 }
 
 impl From<streams::read_resp::read_event::RecordedEvent> for RecordedEvent {
-    fn from(value: streams::read_resp::read_event::RecordedEvent) -> Self {
+    fn from(mut value: streams::read_resp::read_event::RecordedEvent) -> Self {
         let id = value.id.unwrap().try_into().unwrap();
 
         let position = Position {
@@ -130,7 +129,7 @@ impl From<streams::read_resp::read_event::RecordedEvent> for RecordedEvent {
             prepare: value.prepare_position,
         };
 
-        let event_type = value.metadata.get("type").cloned().unwrap_or_default();
+        let event_type = value.metadata.remove("type").unwrap_or_default();
 
         let created: DateTime<Utc> = if let Some(ticks_since_epoch) = value.metadata.get("created")
         {
@@ -150,18 +149,12 @@ impl From<streams::read_resp::read_event::RecordedEvent> for RecordedEvent {
             false
         };
 
-        let stream_id = String::from_utf8_lossy(
-            value
-                .stream_identifier
-                .expect("stream_identifier is always defined")
-                .stream_name
-                .as_bytes(),
-        )
-        .to_string();
-
         RecordedEvent {
             id,
-            stream_id,
+            stream_id_raw: value
+                .stream_identifier
+                .expect("stream_identifier is always defined")
+                .stream_name,
             revision: value.stream_revision,
             position,
             event_type,
