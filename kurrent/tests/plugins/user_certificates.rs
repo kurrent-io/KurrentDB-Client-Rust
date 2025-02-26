@@ -6,7 +6,7 @@ pub async fn tests(port: u16) -> eyre::Result<()> {
         port, user_cert, user_key
     )
     .parse()?;
-    let client = eventstore::Client::new(setts)?;
+    let client = kurrent::Client::new(setts)?;
 
     let mut streams = client.read_all(&Default::default()).await?;
 
