@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "eventstore",
-    "eventstore-extras",
+    "kurrentdb",
+    "kurrentdb-extras",
 
     # internals
     "eventstore-macros",

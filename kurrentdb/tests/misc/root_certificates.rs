@@ -8,7 +8,7 @@ async fn test_with_valid_root_certificate(port: u16) -> eyre::Result<()> {
         port, root_cert
     )
     .parse()?;
-    let client = eventstore::Client::new(setts)?;
+    let client = kurrentdb::Client::new(setts)?;
 
     let mut streams = client.read_all(&Default::default()).await?;
 
@@ -26,7 +26,7 @@ async fn test_with_invalid_certificate(port: u16) -> eyre::Result<()> {
         port, root_cert
     )
     .parse()?;
-    let client = eventstore::Client::new(setts)?;
+    let client = kurrentdb::Client::new(setts)?;
 
     let result = client.read_all(&Default::default()).await;
 

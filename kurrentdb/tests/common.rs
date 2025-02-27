@@ -1,4 +1,4 @@
-use eventstore::EventData;
+use kurrentdb::EventData;
 use serde_json::json;
 
 pub fn fresh_stream_id(prefix: &str) -> String {

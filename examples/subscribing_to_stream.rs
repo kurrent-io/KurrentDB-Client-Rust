@@ -4,11 +4,11 @@
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
-use eventstore::{
+use futures::TryStreamExt;
+use kurrentdb::{
     Client, Credentials, EventData, ExpectedRevision, Position, RetryOptions, StreamPosition,
     SubscribeToAllOptions, SubscribeToStreamOptions, SubscriptionEvent, SubscriptionFilter,
 };
-use futures::TryStreamExt;
 use serde::{Deserialize, Serialize};
 use std::error::Error;
 use uuid::Uuid;

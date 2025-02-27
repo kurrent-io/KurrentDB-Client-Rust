@@ -5,8 +5,8 @@ mod misc;
 mod plugins;
 
 use crate::common::{fresh_stream_id, generate_events};
-use eventstore::{Client, ClientSettings};
 use futures::channel::oneshot;
+use kurrentdb::{Client, ClientSettings};
 use std::time::Duration;
 use testcontainers::{ImageExt, core::ContainerPort, runners::AsyncRunner};
 use tracing::{debug, error};
@@ -38,7 +38,7 @@ fn create_unique_volume() -> eyre::Result<VolumeName> {
     Ok(dir_name)
 }
 
-async fn wait_node_is_alive(setts: &eventstore::ClientSettings, port: u16) -> eyre::Result<()> {
+async fn wait_node_is_alive(setts: &kurrentdb::ClientSettings, port: u16) -> eyre::Result<()> {
     let client = reqwest::Client::builder()
         .danger_accept_invalid_certs(true)
         .build()?;
@@ -100,15 +100,15 @@ async fn wait_node_is_alive(setts: &eventstore::ClientSettings, port: u16) -> ey
 
 // This function assumes that we are using the admin credentials. It's possible during CI that
 // the cluster hasn't created the admin user yet, leading to failing the tests.
-async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<()> {
-    fn can_retry(e: &eventstore::Error) -> bool {
+async fn wait_for_admin_to_be_available(client: &Client) -> kurrentdb::Result<()> {
+    fn can_retry(e: &kurrentdb::Error) -> bool {
         matches!(
             e,
-            eventstore::Error::AccessDenied
-                | eventstore::Error::DeadlineExceeded
-                | eventstore::Error::ServerError(_)
-                | eventstore::Error::NotLeaderException(_)
-                | eventstore::Error::ResourceNotFound
+            kurrentdb::Error::AccessDenied
+                | kurrentdb::Error::DeadlineExceeded
+                | kurrentdb::Error::ServerError(_)
+                | kurrentdb::Error::NotLeaderException(_)
+                | kurrentdb::Error::ResourceNotFound
         )
     }
     let mut count = 0;
@@ -153,7 +153,7 @@ async fn wait_for_admin_to_be_available(client: &Client) -> eventstore::Result<(
         }
     }
 
-    Err(eventstore::Error::ServerError(
+    Err(kurrentdb::Error::ServerError(
         "Waiting for the admin user to be created took too much time".to_string(),
     ))
 }
@@ -253,7 +253,7 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
             let settings = "esdb://admin:changeit@localhost:2111,localhost:2112,localhost:2113?tlsVerifyCert=false&nodePreference=leader&maxdiscoverattempts=50&defaultDeadline=60000"
                 .parse::<ClientSettings>()?;
 
-            let client = Client::new(settings)?;
+            let client = Client::new(settings.clone())?;
 
             // Those pre-checks are put in place to avoid test flakiness. In essence, those functions use
             // features we test later on.
@@ -349,7 +349,7 @@ async fn single_node_discover_error() -> eyre::Result<()> {
         .append_to_stream(stream_id, &Default::default(), events)
         .await;
 
-    if let Err(eventstore::Error::GrpcConnectionError(_)) = result {
+    if let Err(kurrentdb::Error::GrpcConnectionError(_)) = result {
         Ok(())
     } else {
         panic!("Expected gRPC connection error");
@@ -377,8 +377,8 @@ async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
     let cloned_setts = settings.clone();
     let client = Client::new(settings)?;
     let stream_name = fresh_stream_id("auto-reconnect");
-    let retry = eventstore::RetryOptions::default().retry_forever();
-    let options = eventstore::SubscribeToStreamOptions::default().retry_options(retry);
+    let retry = kurrentdb::RetryOptions::default().retry_forever();
+    let options = kurrentdb::SubscribeToStreamOptions::default().retry_options(retry);
     let mut stream = client
         .subscribe_to_stream(stream_name.as_str(), &options)
         .await;

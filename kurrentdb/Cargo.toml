@@ -1,15 +1,15 @@
 [package]
 authors = ["Yorick Laupa <yo.eight@gmail.com>"]
 edition = "2024"
-name = "eventstore"
-version = "4.0.0"
+name = "kurrentdb"
+version = "1.0.0"
 
 # Uncomment if you want to update messages.rs code-gen.
 # We disabled codegen.rs because it requires having `protoc` installed on your machine
 # in order to build that library.
 # build = "codegen.rs"
 
-description = "Official EventStoreDB gRPC client"
+description = "Official KurrentDB gRPC client"
 keywords = ["database", "eventsourcing", "eventstore", "eventstoredb", "grpc"]
 license = "MIT"
 readme = "../README.md"
@@ -52,6 +52,7 @@ tower = "0.5"
 url = "2"
 urlencoding = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
+lazy_static = "1"
 
 [build-dependencies]
 tonic-build = { version = "0.12", features = ["prost-build"] }
