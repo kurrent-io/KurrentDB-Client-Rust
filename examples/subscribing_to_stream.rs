@@ -5,7 +5,7 @@
 #![allow(unreachable_code)]
 
 use futures::TryStreamExt;
-use kurrent::{
+use kurrentdb::{
     Client, Credentials, EventData, ExpectedRevision, Position, RetryOptions, StreamPosition,
     SubscribeToAllOptions, SubscribeToStreamOptions, SubscriptionEvent, SubscriptionFilter,
 };

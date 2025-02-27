@@ -1,5 +1,5 @@
 use crate::common::generate_events;
-use kurrent::{Client, ProjectionClient};
+use kurrentdb::{Client, ProjectionClient};
 use serde::Deserialize;
 use tracing::{debug, error, warn};
 

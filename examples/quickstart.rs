@@ -4,7 +4,7 @@
 #![allow(unused_variables)]
 #![allow(unused_must_use)]
 
-use kurrent::{
+use kurrentdb::{
     AppendToStreamOptions, Client, Credentials, EventData, ExpectedRevision, ReadStreamOptions,
 };
 use serde::{Deserialize, Serialize};

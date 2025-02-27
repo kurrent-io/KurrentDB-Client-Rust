@@ -4,7 +4,7 @@
 #![allow(unused_variables)]
 
 use futures::TryStreamExt;
-use kurrent::{
+use kurrentdb::{
     AppendToStreamOptions, Client, Credentials, EventData, ExpectedRevision, ReadStreamOptions,
     StreamPosition,
 };

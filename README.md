@@ -26,7 +26,7 @@ Server setup instructions can be found here [KurrentDB Docs], follow the docker 
 # Example
 
 ```rust
-use eventstore::{ Client, EventData };
+use kurrentdb::{ Client, EventData };
 use serde::{Serialize, Deserialize};
 
 #[derive(Serialize, Deserialize, Debug)]
