@@ -52,6 +52,7 @@ tower = "0.5"
 url = "2"
 urlencoding = "2"
 uuid = { version = "1", features = ["v4", "serde"] }
+lazy_static = "1"
 
 [build-dependencies]
 tonic-build = { version = "0.12", features = ["prost-build"] }

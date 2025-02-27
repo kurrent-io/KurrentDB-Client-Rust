@@ -1,5 +1,6 @@
 use rustls::pki_types::pem::PemObject;
 use std::cmp::Ordering;
+use std::collections::HashSet;
 use std::fmt::{Debug, Display};
 use std::str::FromStr;
 use std::sync::Once;
@@ -452,18 +453,31 @@ where
     }
 }
 
+lazy_static::lazy_static! {
+    static ref SUPPORTED_PROTOCOLS: HashSet<&'static str> = {
+        let mut s = HashSet::new();
+        s.insert("esdb");
+        s.insert("esdb+discover");
+        s.insert("kurrent");
+        s.insert("kurrent+discover");
+        s.insert("kdb");
+        s.insert("kdb+discover");
+        s
+    };
+}
+
 fn parse_from_url(
     mut result: ClientSettings,
     url: Url,
 ) -> Result<ClientSettings, ClientSettingsParseError> {
-    if url.scheme() != "esdb" && url.scheme() != "esdb+discover" {
+    if !SUPPORTED_PROTOCOLS.contains(url.scheme()) {
         return Err(ClientSettingsParseError {
             message: format!("Unknown URL scheme: {}", url.scheme()),
             error: None,
         });
     }
 
-    result.dns_discover = url.scheme() == "esdb+discover";
+    result.dns_discover = url.scheme().contains("+discover");
 
     if !url.username().is_empty() {
         result.default_user_name = Some(Credentials::new(
