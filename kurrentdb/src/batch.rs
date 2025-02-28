@@ -1,4 +1,4 @@
-use crate::{EventData, ExpectedRevision, Position};
+use crate::{EventData, Position, StreamState};
 use tokio::sync::{
     mpsc::{UnboundedReceiver, UnboundedSender},
     oneshot,
@@ -16,7 +16,7 @@ pub(crate) struct Req {
     pub(crate) id: uuid::Uuid,
     pub(crate) stream_name: String,
     pub(crate) events: Vec<EventData>,
-    pub(crate) expected_revision: ExpectedRevision,
+    pub(crate) expected_revision: StreamState,
 }
 
 #[derive(Debug)]
@@ -37,7 +37,7 @@ pub struct BatchWriteResult {
     stream_name: String,
     current_revision: Option<u64>,
     current_position: Option<Position>,
-    expected_revision: Option<ExpectedRevision>,
+    expected_revision: Option<StreamState>,
 }
 
 impl BatchWriteResult {
@@ -45,7 +45,7 @@ impl BatchWriteResult {
         stream_name: String,
         current_revision: Option<u64>,
         current_position: Option<Position>,
-        expected_revision: Option<ExpectedRevision>,
+        expected_revision: Option<StreamState>,
     ) -> Self {
         Self {
             stream_name,
@@ -67,7 +67,7 @@ impl BatchWriteResult {
         self.current_position
     }
 
-    pub fn expected_version(&self) -> Option<ExpectedRevision> {
+    pub fn expected_version(&self) -> Option<StreamState> {
         self.expected_revision
     }
 }
@@ -137,7 +137,7 @@ impl BatchAppendClient {
     pub async fn append_to_stream<S: AsRef<str>>(
         &self,
         stream_name: S,
-        expected_revision: ExpectedRevision,
+        expected_revision: StreamState,
         events: Vec<EventData>,
     ) -> crate::Result<BatchWriteResult> {
         let (sender, receiver) = oneshot::channel();
