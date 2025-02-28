@@ -653,7 +653,7 @@ pub async fn tombstone_stream(
     use streams::tombstone_req::options::ExpectedStreamRevision;
     use streams::tombstone_resp::PositionOption;
 
-    let expected_stream_revision = match options.version {
+    let expected_stream_revision = match options.stream_state {
         StreamState::Any => ExpectedStreamRevision::Any(()),
         StreamState::NoStream => ExpectedStreamRevision::NoStream(()),
         StreamState::StreamExists => ExpectedStreamRevision::StreamExists(()),
