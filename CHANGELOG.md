@@ -3,6 +3,9 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+- Rebrand the codebase. [EventStoreDB-Client-Rust#188](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/188)
+
 ## [4.0.0] - 2025-02-07
 ### Changed
 - Updated CI workflows to pull eventstore docker images from cloud smith registry. [EventStoreDB-Client-Rust#173](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/173)
