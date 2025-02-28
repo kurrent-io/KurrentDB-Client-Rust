@@ -22,6 +22,9 @@ impl TombstoneStreamOptions {
     /// Asks the server to check that the stream receiving the event is at
     /// the given expected version. Default: `StreamState::Any`.
     pub fn stream_state(self, stream_state: StreamState) -> Self {
-        Self { stream_state, ..self }
+        Self {
+            stream_state,
+            ..self
+        }
     }
 }
