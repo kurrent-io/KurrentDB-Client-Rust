@@ -458,6 +458,8 @@ lazy_static::lazy_static! {
         let mut s = HashSet::new();
         s.insert("esdb");
         s.insert("esdb+discover");
+        s.insert("kurrentdb");
+        s.insert("kurrentdb+discover");
         s.insert("kurrent");
         s.insert("kurrent+discover");
         s.insert("kdb");
