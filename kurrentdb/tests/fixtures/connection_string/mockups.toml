@@ -446,6 +446,22 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
+string = "kurrentdb://localhost"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_113
+
+[[mockups]]
 string = "kurrent://localhost"
 [mockups.expected]
 dns_discover = false
@@ -475,6 +491,25 @@ keep_alive_interval = 10_000
 keep_alive_timeout = 10_000
 [[mockups.expected.hosts]]
 host = "localhost"
+port = 2_113
+
+[[mockups]]
+string = "kurrentdb+discover://user:pass@host?nodePreference=follower&tlsVerifyCert=false"
+[mockups.expected]
+dns_discover = true
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Follower"
+secure = true
+tls_verify_cert = false
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "host"
 port = 2_113
 
 [[mockups]]
