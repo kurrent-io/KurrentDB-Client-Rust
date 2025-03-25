@@ -86,6 +86,6 @@ Bear in mind that this client is not yet properly documented. We are working har
 
 [KurrentDB]: https://kurrent.io/
 [KurrentDB rust gRPC]: https://developers.kurrent.io/clients/grpc/getting-started?codeLanguage=Rust
-[kurrent docs]: https://developers.kurrent.io/latest.html
+[KurrentDB Docs]: https://developers.kurrent.io/latest.html
 [kurrent discuss]: https://discuss.kurrent.io/
-[kurrent support]: https://kurrent.io/support/
+[KurrentDB Support]: https://kurrent.io/support/
