@@ -460,13 +460,13 @@ async fn test_read_all_filter(client: &Client) -> kurrentdb::Result<()> {
 
     // Append our test events
     client
-        .append_to_stream(stream_id1.clone(), &Default::default(), events_to_append1)
+        .append_to_stream(stream_id1.as_str(), &Default::default(), events_to_append1)
         .await?;
     client
-        .append_to_stream(stream_id2.clone(), &Default::default(), events_to_append2)
+        .append_to_stream(stream_id2.as_str(), &Default::default(), events_to_append2)
         .await?;
     client
-        .append_to_stream(other_stream_id.clone(), &Default::default(), events_other)
+        .append_to_stream(other_stream_id.as_str(), &Default::default(), events_other)
         .await?;
 
     debug!(
