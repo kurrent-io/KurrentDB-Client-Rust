@@ -23,7 +23,7 @@
 //! async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //!
 //!     // Creates a client settings for a single node configuration.
-//!     let settings = "esdb://admin:changeit@localhost:2113".parse()?;
+//!     let settings = "kurrentdb://admin:changeit@localhost:2113".parse()?;
 //!     let client = Client::new(settings)?;
 //!
 //!     let payload = Foo {
