@@ -3,15 +3,15 @@
 [![Crates.io][crates-download]][crates-url]
 [![Build Status][ci-badge]][ci-url]
 ![Discord](https://img.shields.io/discord/415421715385155584.svg)
-![Crates.io](https://img.shields.io/crates/l/eventstore.svg)
+![Crates.io](https://img.shields.io/crates/l/kurrent.svg)
 
-[crates-badge]: https://img.shields.io/crates/v/eventstore.svg
-[crates-download]: https://img.shields.io/crates/d/eventstore.svg
-[crates-url]: https://crates.io/crates/eventstore
+[crates-badge]: https://img.shields.io/crates/v/kurrent.svg
+[crates-download]: https://img.shields.io/crates/d/kurrent.svg
+[crates-url]: https://crates.io/crates/kurrent
 [ci-badge]: https://github.com/EventStore/KurrentDB-Client-Rust/workflows/CI/badge.svg
 [ci-url]: https://github.com/EventStore/KurrentDB-Client-Rust/actions
 
-[Documentation](https://docs.rs/eventstore)
+[Documentation](https://docs.rs/kurrent)
 
 Official Rust [KurrentDB rust gRPC] gRPC Client.
 
@@ -38,7 +38,7 @@ struct Foo {
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     // Creates a client settings for a single node configuration.
-    let settings = "esdb://admin:changeit@localhost:2113".parse()?;
+    let settings = "kurrentdb://admin:changeit@localhost:2113".parse()?;
     let client = Client::new(settings)?;
 
     let payload = Foo {
@@ -81,11 +81,11 @@ Bear in mind that this client is not yet properly documented. We are working har
 
 ## Communities
 
-- [Discuss](https://discuss.eventstore.com/)
-- [Discord (Event Store)](https://discord.gg/Phn9pmCw3t)
+- [Discuss](https://discuss.kurrent.io/)
+- [Discord (Kurrent)](https://discord.gg/Phn9pmCw3t)
 
-[KurrentDB]: https://eventstore.com/
-[KurrentDB rust gRPC]: https://developers.eventstore.com/clients/grpc/getting-started?codeLanguage=Rust
-[eventstoredb docs]: https://developers.eventstore.com/latest.html
-[eventstoredb discuss]: https://discuss.eventstore.com/
-[eventstoredb support]: https://eventstore.com/support/
+[KurrentDB]: https://kurrent.io/
+[KurrentDB rust gRPC]: https://developers.kurrent.io/clients/grpc/getting-started?codeLanguage=Rust
+[kurrent docs]: https://developers.kurrent.io/latest.html
+[kurrent discuss]: https://discuss.kurrent.io/
+[kurrent support]: https://kurrent.io/support/
