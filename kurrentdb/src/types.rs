@@ -1931,9 +1931,9 @@ impl StreamName for Bytes {
     }
 }
 
-impl StreamName for &str {
+impl StreamName for &'static str {
     fn into_stream_name(self) -> Bytes {
-        self.to_string().into()
+        Bytes::from_owner(self)
     }
 }
 
@@ -1955,7 +1955,7 @@ impl MetadataStreamName for Bytes {
 
 impl MetadataStreamName for &str {
     fn into_metadata_stream_name(self) -> Bytes {
-        format!("$${}", self).to_string().into()
+        format!("$${}", self).into()
     }
 }
 
