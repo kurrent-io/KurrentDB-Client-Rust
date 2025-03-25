@@ -3,15 +3,15 @@
 [![Crates.io][crates-download]][crates-url]
 [![Build Status][ci-badge]][ci-url]
 ![Discord](https://img.shields.io/discord/415421715385155584.svg)
-![Crates.io](https://img.shields.io/crates/l/kurrent.svg)
+![Crates.io](https://img.shields.io/crates/l/kurrentdb.svg)
 
-[crates-badge]: https://img.shields.io/crates/v/kurrent.svg
-[crates-download]: https://img.shields.io/crates/d/kurrent.svg
-[crates-url]: https://crates.io/crates/kurrent
-[ci-badge]: https://github.com/EventStore/KurrentDB-Client-Rust/workflows/CI/badge.svg
-[ci-url]: https://github.com/EventStore/KurrentDB-Client-Rust/actions
+[crates-badge]: https://img.shields.io/crates/v/kurrentdb.svg
+[crates-download]: https://img.shields.io/crates/d/kurrentdb.svg
+[crates-url]: https://crates.io/crates/kurrentdb
+[ci-badge]: https://github.com/EventStore/EventStoreDB-Client-Rust/workflows/CI/badge.svg
+[ci-url]: https://github.com/EventStore/EventStoreDB-Client-Rust/actions
 
-[Documentation](https://docs.rs/kurrent)
+[Documentation](https://docs.rs/kurrentdb)
 
 Official Rust [KurrentDB rust gRPC] gRPC Client.
 
