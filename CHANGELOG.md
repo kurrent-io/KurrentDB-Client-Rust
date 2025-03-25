@@ -2,6 +2,7 @@
 All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
+
 ### Changed
 - Rebrand the codebase. [EventStoreDB-Client-Rust#188](https://github.com/EventStore/EventStoreDB-Client-Rust/pull/188)
 
