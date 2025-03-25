@@ -2,7 +2,7 @@
 authors = ["Yorick Laupa <yo.eight@gmail.com>"]
 edition = "2024"
 name = "kurrentdb"
-version = "1.0.0-alpha.2"
+version = "1.0.0-alpha.3"
 
 # Uncomment if you want to update messages.rs code-gen.
 # We disabled codegen.rs because it requires having `protoc` installed on your machine
@@ -10,7 +10,7 @@ version = "1.0.0-alpha.2"
 # build = "codegen.rs"
 
 description = "Official KurrentDB gRPC client"
-keywords = ["database", "eventsourcing", "eventstore", "eventstoredb", "grpc"]
+keywords = ["database", "event-sourcing", "ddd", "cqrs", "kurrent", "kurrentdb", "grpc"]
 license = "MIT"
 readme = "../README.md"
 repository = "https://github.com/EventStore/EventStoreDB-Client-Rust"
