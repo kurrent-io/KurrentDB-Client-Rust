@@ -4,7 +4,7 @@ async fn test_with_valid_root_certificate(port: u16) -> eyre::Result<()> {
     let root_cert = "certs/ca/ca.crt";
 
     let setts = format!(
-        "esdb://admin:changeit@localhost:{}?tlsVerifyCert=true&tls=true&tlsCaFile={}",
+        "kurrentdb://admin:changeit@localhost:{}?tlsVerifyCert=true&tls=true&tlsCaFile={}",
         port, root_cert
     )
     .parse()?;
@@ -22,7 +22,7 @@ async fn test_with_invalid_certificate(port: u16) -> eyre::Result<()> {
     let root_cert = "certs/node1/node.crt";
 
     let setts = format!(
-        "esdb://admin:changeit@localhost:{}?tlsVerifyCert=true&tls=true&tlsCaFile={}",
+        "kurrentdb://admin:changeit@localhost:{}?tlsVerifyCert=true&tls=true&tlsCaFile={}",
         port, root_cert
     )
     .parse()?;

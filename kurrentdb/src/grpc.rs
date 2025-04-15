@@ -264,7 +264,7 @@ fn default_keep_alive_timeout() -> Duration {
 /// ```
 /// # use kurrent::ClientSettings;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let setts = "esdb://localhost:1234?tls=false".parse::<ClientSettings>()?;
+/// let setts = "kurrentdb://localhost:1234?tls=false".parse::<ClientSettings>()?;
 /// # Ok(())
 /// # }
 /// ```
@@ -275,7 +275,7 @@ fn default_keep_alive_timeout() -> Duration {
 /// ```
 /// # use kurrent::ClientSettings;
 /// # fn main() -> Result<(), Box<dyn std::error::Error>> {
-/// let setts = "esdb://localhost:1111,localhost:2222,localhost:3333".parse::<ClientSettings>()?;
+/// let setts = "kurrentdb://localhost:1111,localhost:2222,localhost:3333".parse::<ClientSettings>()?;
 /// # Ok(())
 /// # }
 /// ```
@@ -733,7 +733,7 @@ impl FromStr for ClientSettings {
                 // the URL standard. When it happens, we rewrite the connection string to parse
                 // those seeds properly. It happens when facing connection string like the following:
                 //
-                // esdb://host1:1234,host2:4321,host3:3231
+                // kurrentdb://host1:1234,host2:4321,host3:3231
                 if e == url::ParseError::InvalidPort && s.contains(',') {
                     // We replace ',' by '/' and handle remaining gossip seeds as path segments.
                     match s.replace(',', "/").parse::<Url>() {

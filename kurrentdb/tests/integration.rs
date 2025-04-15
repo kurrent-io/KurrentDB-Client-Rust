@@ -233,13 +233,13 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
             _container = Some(temp);
             let settings = if secure_mode {
                 format!(
-                    "esdb://admin:changeit@localhost:{}?defaultDeadline=60000&tlsVerifyCert=false",
+                    "kurrentdb://admin:changeit@localhost:{}?defaultDeadline=60000&tlsVerifyCert=false",
                     container_port,
                 )
                 .parse::<ClientSettings>()
             } else {
                 format!(
-                    "esdb://localhost:{}?tls=false&defaultDeadline=60000",
+                    "kurrentdb://localhost:{}?tls=false&defaultDeadline=60000",
                     container_port,
                 )
                 .parse::<ClientSettings>()
@@ -250,7 +250,7 @@ async fn run_test(test: impl Into<Tests>, topology: Topologies) -> eyre::Result<
         }
 
         Topologies::Cluster => {
-            let settings = "esdb://admin:changeit@localhost:2111,localhost:2112,localhost:2113?tlsVerifyCert=false&nodePreference=leader&maxdiscoverattempts=50&defaultDeadline=60000"
+            let settings = "kurrentdb://admin:changeit@localhost:2111,localhost:2112,localhost:2113?tlsVerifyCert=false&nodePreference=leader&maxdiscoverattempts=50&defaultDeadline=60000"
                 .parse::<ClientSettings>()?;
 
             let client = Client::new(settings.clone())?;
@@ -340,7 +340,7 @@ async fn cluster_operations() -> eyre::Result<()> {
 
 #[tokio::test(flavor = "multi_thread")]
 async fn single_node_discover_error() -> eyre::Result<()> {
-    let settings = format!("esdb://noserver:{}", 2_113).parse()?;
+    let settings = format!("kurrentdb://noserver:{}", 2_113).parse()?;
     let client = Client::new(settings)?;
     let stream_id = fresh_stream_id("wont-be-created");
     let events = generate_events("wont-be-written", 5);
@@ -370,7 +370,7 @@ async fn single_node_auto_resub_on_connection_drop() -> eyre::Result<()> {
         .await?;
 
     let settings =
-        format!("esdb://admin:changeit@localhost:{}?tls=false", 3_113).parse::<ClientSettings>()?;
+        format!("kurrentdb://admin:changeit@localhost:{}?tls=false", 3_113).parse::<ClientSettings>()?;
 
     wait_node_is_alive(&settings, 3_113).await?;
 

@@ -1,5 +1,5 @@
 [[mockups]]
-string = "esdb://localhost"
+string = "kurrentdb://localhost"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -15,7 +15,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost:2114"
+string = "kurrentdb://localhost:2114"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -31,26 +31,7 @@ host = "localhost"
 port = 2_114
 
 [[mockups]]
-string = "esdb://user:pass@localhost:2114"
-[mockups.expected]
-dns_discover = false
-max_discover_attempts = 3
-discovery_interval = 500
-gossip_timeout = 3_000
-preference = "Leader"
-secure = true
-tls_verify_cert = true
-keep_alive_interval = 10_000
-keep_alive_timeout = 10_000
-[mockups.expected.default_user_name]
-login = "user"
-password = "pass"
-[[mockups.expected.hosts]]
-host = "localhost"
-port = 2_114
-
-[[mockups]]
-string = "esdb://user:pass@localhost:2114/"
+string = "kurrentdb://user:pass@localhost:2114"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -69,7 +50,26 @@ host = "localhost"
 port = 2_114
 
 [[mockups]]
-string = "esdb://user:pass@localhost:2114?tlsVerifyCert=false"
+string = "kurrentdb://user:pass@localhost:2114/"
+[mockups.expected]
+dns_discover = false
+max_discover_attempts = 3
+discovery_interval = 500
+gossip_timeout = 3_000
+preference = "Leader"
+secure = true
+tls_verify_cert = true
+keep_alive_interval = 10_000
+keep_alive_timeout = 10_000
+[mockups.expected.default_user_name]
+login = "user"
+password = "pass"
+[[mockups.expected.hosts]]
+host = "localhost"
+port = 2_114
+
+[[mockups]]
+string = "kurrentdb://user:pass@localhost:2114?tlsVerifyCert=false"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -88,7 +88,7 @@ host = "localhost"
 port = 2_114
 
 [[mockups]]
-string = "esdb://user:pass@localhost:2114?tls=false"
+string = "kurrentdb://user:pass@localhost:2114?tls=false"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -107,7 +107,7 @@ host = "localhost"
 port = 2_114
 
 [[mockups]]
-string = "esdb://host1,host2,host3"
+string = "kurrentdb://host1,host2,host3"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -129,7 +129,7 @@ host = "host3"
 port = 2_113
 
 [[mockups]]
-string = "esdb://host1:1234,host2:4321,host3:3231"
+string = "kurrentdb://host1:1234,host2:4321,host3:3231"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -151,7 +151,7 @@ host = "host3"
 port = 3_231
 
 [[mockups]]
-string = "esdb://user:pass@host1:1234,host2:4321,host3:3231?nodePreference=follower"
+string = "kurrentdb://user:pass@host1:1234,host2:4321,host3:3231?nodePreference=follower"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -176,7 +176,7 @@ host = "host3"
 port = 3_231
 
 [[mockups]]
-string = "esdb://host1,host2,host3?tls=false"
+string = "kurrentdb://host1,host2,host3?tls=false"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -198,7 +198,7 @@ host = "host3"
 port = 2_113
 
 [[mockups]]
-string = "esdb://host1,host2,host3?tlsVerifyCert=false"
+string = "kurrentdb://host1,host2,host3?tlsVerifyCert=false"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -259,7 +259,7 @@ host = "host"
 port = 2_113
 
 [[mockups]]
-string = "esdb://host?MaxDiscoverAttempts=200&discoveryinterval=1000&GOSSIPTIMEOUT=1&nOdEpReFeReNcE=leader&TLS=false&TlsVerifyCert=false&THROWOnAppendFailure=true"
+string = "kurrentdb://host?MaxDiscoverAttempts=200&discoveryinterval=1000&GOSSIPTIMEOUT=1&nOdEpReFeReNcE=leader&TLS=false&TlsVerifyCert=false&THROWOnAppendFailure=true"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 200
@@ -275,7 +275,7 @@ host = "host"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?keepAliveInterval=20000&keepAliveTimeout=30000"
+string = "kurrentdb://localhost?keepAliveInterval=20000&keepAliveTimeout=30000"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -291,7 +291,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?keepAliveInterval=-1&keepAliveTimeout=-1"
+string = "kurrentdb://localhost?keepAliveInterval=-1&keepAliveTimeout=-1"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -307,7 +307,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?keepAliveInterval=20000&keepAliveTimeout=-33"
+string = "kurrentdb://localhost?keepAliveInterval=20000&keepAliveTimeout=-33"
 expect_failure = true
 [mockups.expected]
 dns_discover = false
@@ -324,7 +324,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?keepAliveInterval=kjslkjfds&keepAliveTimeout=30000"
+string = "kurrentdb://localhost?keepAliveInterval=kjslkjfds&keepAliveTimeout=30000"
 expect_failure = true
 [mockups.expected]
 dns_discover = false
@@ -341,7 +341,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?defaultDeadline=1"
+string = "kurrentdb://localhost?defaultDeadline=1"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -358,7 +358,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?defaultDeadline=100000"
+string = "kurrentdb://localhost?defaultDeadline=100000"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -375,7 +375,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?connectionName=foobar"
+string = "kurrentdb://localhost?connectionName=foobar"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -392,7 +392,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://foo:bar@eventstore_db:2115"
+string = "kurrentdb://foo:bar@eventstore_db:2115"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -411,7 +411,7 @@ host = "eventstore_db"
 port = 2_115
 
 [[mockups]]
-string = "esdb://localhost?userCertFile=foo&userKeyFile=bar"
+string = "kurrentdb://localhost?userCertFile=foo&userKeyFile=bar"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
@@ -429,7 +429,7 @@ host = "localhost"
 port = 2_113
 
 [[mockups]]
-string = "esdb://localhost?tlsCaFile=foo"
+string = "kurrentdb://localhost?tlsCaFile=foo"
 [mockups.expected]
 dns_discover = false
 max_discover_attempts = 3
