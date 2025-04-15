@@ -258,7 +258,7 @@ fn default_keep_alive_timeout() -> Duration {
     ClientSettings::default().keep_alive_timeout
 }
 
-/// Gathers all the settings related to a gRPC client with an KurrentDB database.
+/// Gathers all the settings related to a gRPC client with a KurrentDB database.
 /// `ClientSettings` can only be created when parsing a connection string.
 ///
 /// ```
