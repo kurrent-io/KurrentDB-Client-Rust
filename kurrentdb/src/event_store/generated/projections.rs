@@ -264,10 +264,10 @@ pub mod projections_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
     pub struct ProjectionsClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -285,7 +285,7 @@ pub mod projections_client {
     }
     impl<T> ProjectionsClient<T>
     where
-        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
         T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
@@ -306,13 +306,14 @@ pub mod projections_client {
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
             T: tonic::codegen::Service<
-                    http::Request<tonic::body::BoxBody>,
-                    Response = http::Response<
-                        <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
-                    >,
+                http::Request<tonic::body::Body>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            >,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             ProjectionsClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -351,54 +352,78 @@ pub mod projections_client {
             &mut self,
             request: impl tonic::IntoRequest<super::CreateReq>,
         ) -> std::result::Result<tonic::Response<super::CreateResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Create",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Create",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Create",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn update(
             &mut self,
             request: impl tonic::IntoRequest<super::UpdateReq>,
         ) -> std::result::Result<tonic::Response<super::UpdateResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Update",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Update",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Update",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn delete(
             &mut self,
             request: impl tonic::IntoRequest<super::DeleteReq>,
         ) -> std::result::Result<tonic::Response<super::DeleteResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Delete",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Delete",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Delete",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn statistics(
@@ -408,126 +433,182 @@ pub mod projections_client {
             tonic::Response<tonic::codec::Streaming<super::StatisticsResp>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Statistics",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Statistics",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Statistics",
+                    ),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
         pub async fn disable(
             &mut self,
             request: impl tonic::IntoRequest<super::DisableReq>,
         ) -> std::result::Result<tonic::Response<super::DisableResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Disable",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Disable",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Disable",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn enable(
             &mut self,
             request: impl tonic::IntoRequest<super::EnableReq>,
         ) -> std::result::Result<tonic::Response<super::EnableResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Enable",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Enable",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Enable",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn reset(
             &mut self,
             request: impl tonic::IntoRequest<super::ResetReq>,
         ) -> std::result::Result<tonic::Response<super::ResetResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Reset",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Reset",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Reset",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn state(
             &mut self,
             request: impl tonic::IntoRequest<super::StateReq>,
         ) -> std::result::Result<tonic::Response<super::StateResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/State",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "State",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "State",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn result(
             &mut self,
             request: impl tonic::IntoRequest<super::ResultReq>,
         ) -> std::result::Result<tonic::Response<super::ResultResp>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/Result",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "Result",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "Result",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
         pub async fn restart_subsystem(
             &mut self,
             request: impl tonic::IntoRequest<()>,
         ) -> std::result::Result<tonic::Response<()>, tonic::Status> {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.projections.Projections/RestartSubsystem",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.projections.Projections",
-                "RestartSubsystem",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new(
+                        "event_store.client.projections.Projections",
+                        "RestartSubsystem",
+                    ),
+                );
             self.inner.unary(req, path, codec).await
         }
     }

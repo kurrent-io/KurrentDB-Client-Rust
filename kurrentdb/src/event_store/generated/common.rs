@@ -39,14 +39,16 @@ pub struct WrongExpectedVersion {
         oneof = "wrong_expected_version::CurrentStreamRevisionOption",
         tags = "1, 2"
     )]
-    pub current_stream_revision_option:
-        ::core::option::Option<wrong_expected_version::CurrentStreamRevisionOption>,
+    pub current_stream_revision_option: ::core::option::Option<
+        wrong_expected_version::CurrentStreamRevisionOption,
+    >,
     #[prost(
         oneof = "wrong_expected_version::ExpectedStreamPositionOption",
         tags = "3, 4, 5, 6"
     )]
-    pub expected_stream_position_option:
-        ::core::option::Option<wrong_expected_version::ExpectedStreamPositionOption>,
+    pub expected_stream_position_option: ::core::option::Option<
+        wrong_expected_version::ExpectedStreamPositionOption,
+    >,
 }
 /// Nested message and enum types in `WrongExpectedVersion`.
 pub mod wrong_expected_version {

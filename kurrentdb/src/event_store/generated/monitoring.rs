@@ -9,8 +9,10 @@ pub struct StatsReq {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct StatsResp {
     #[prost(map = "string, string", tag = "1")]
-    pub stats:
-        ::std::collections::HashMap<::prost::alloc::string::String, ::prost::alloc::string::String>,
+    pub stats: ::std::collections::HashMap<
+        ::prost::alloc::string::String,
+        ::prost::alloc::string::String,
+    >,
 }
 /// Generated client implementations.
 pub mod monitoring_client {
@@ -19,10 +21,10 @@ pub mod monitoring_client {
         dead_code,
         missing_docs,
         clippy::wildcard_imports,
-        clippy::let_unit_value
+        clippy::let_unit_value,
     )]
-    use tonic::codegen::http::Uri;
     use tonic::codegen::*;
+    use tonic::codegen::http::Uri;
     #[derive(Debug, Clone)]
     pub struct MonitoringClient<T> {
         inner: tonic::client::Grpc<T>,
@@ -40,7 +42,7 @@ pub mod monitoring_client {
     }
     impl<T> MonitoringClient<T>
     where
-        T: tonic::client::GrpcService<tonic::body::BoxBody>,
+        T: tonic::client::GrpcService<tonic::body::Body>,
         T::Error: Into<StdError>,
         T::ResponseBody: Body<Data = Bytes> + std::marker::Send + 'static,
         <T::ResponseBody as Body>::Error: Into<StdError> + std::marker::Send,
@@ -61,13 +63,14 @@ pub mod monitoring_client {
             F: tonic::service::Interceptor,
             T::ResponseBody: Default,
             T: tonic::codegen::Service<
-                    http::Request<tonic::body::BoxBody>,
-                    Response = http::Response<
-                        <T as tonic::client::GrpcService<tonic::body::BoxBody>>::ResponseBody,
-                    >,
+                http::Request<tonic::body::Body>,
+                Response = http::Response<
+                    <T as tonic::client::GrpcService<tonic::body::Body>>::ResponseBody,
                 >,
-            <T as tonic::codegen::Service<http::Request<tonic::body::BoxBody>>>::Error:
-                Into<StdError> + std::marker::Send + std::marker::Sync,
+            >,
+            <T as tonic::codegen::Service<
+                http::Request<tonic::body::Body>,
+            >>::Error: Into<StdError> + std::marker::Send + std::marker::Sync,
         {
             MonitoringClient::new(InterceptedService::new(inner, interceptor))
         }
@@ -109,18 +112,23 @@ pub mod monitoring_client {
             tonic::Response<tonic::codec::Streaming<super::StatsResp>>,
             tonic::Status,
         > {
-            self.inner.ready().await.map_err(|e| {
-                tonic::Status::unknown(format!("Service was not ready: {}", e.into()))
-            })?;
+            self.inner
+                .ready()
+                .await
+                .map_err(|e| {
+                    tonic::Status::unknown(
+                        format!("Service was not ready: {}", e.into()),
+                    )
+                })?;
             let codec = tonic::codec::ProstCodec::default();
             let path = http::uri::PathAndQuery::from_static(
                 "/event_store.client.monitoring.Monitoring/Stats",
             );
             let mut req = request.into_request();
-            req.extensions_mut().insert(GrpcMethod::new(
-                "event_store.client.monitoring.Monitoring",
-                "Stats",
-            ));
+            req.extensions_mut()
+                .insert(
+                    GrpcMethod::new("event_store.client.monitoring.Monitoring", "Stats"),
+                );
             self.inner.server_streaming(req, path, codec).await
         }
     }

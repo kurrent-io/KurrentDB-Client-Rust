@@ -44,14 +44,17 @@ pub struct ProjectionClient {
 }
 
 impl ProjectionClient {
-    pub fn new(settings: ClientSettings) -> Self {
+    pub fn new(settings: ClientSettings) -> eyre::Result<Self> {
         ProjectionClient::with_runtime_handle(tokio::runtime::Handle::current(), settings)
     }
 
-    pub fn with_runtime_handle(handle: tokio::runtime::Handle, settings: ClientSettings) -> Self {
-        let client = GrpcClient::create(handle, settings);
+    pub fn with_runtime_handle(
+        handle: tokio::runtime::Handle,
+        settings: ClientSettings,
+    ) -> eyre::Result<Self> {
+        let client = GrpcClient::create(handle, settings)?;
 
-        ProjectionClient { client }
+        Ok(ProjectionClient { client })
     }
 
     pub fn settings(&self) -> &ClientSettings {
