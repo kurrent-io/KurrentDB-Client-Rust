@@ -294,20 +294,20 @@ fn default_keep_alive_timeout() -> Duration {
 /// connection string, that setting default value is used.
 ///
 /// * `maxDiscoverAttempts`: default `3`. Maximum number of DNS discovery attempts before the
-///    connection gives up.
+///   connection gives up.
 ///
 /// * `discoveryInterval`: default `500ms`. Waiting period between discovery attempts.
 ///
 /// * `gossipTimeout`: default `3s`: Waiting period before a gossip request timeout.
-///    __*TODO - Current behavior doesn't timeout at all.*__
+///   __*TODO - Current behavior doesn't timeout at all.*__
 ///
 /// * `tls`: default `true`. Use a secure connection.
 ///
 /// * `tlsVerifyCert`: default `true`. When using a secure connection, perform a certification
-///    verification.
+///   verification.
 ///
 /// * `nodePreference`: default `random`. When in a cluster connection, indicates what type of node
-///    a connection should pick. Keep in mind that's best effort. Supported values are:
+///   a connection should pick. Keep in mind that's best effort. Supported values are:
 ///    * `leader`
 ///    * `random`
 ///    * `follower`
@@ -932,7 +932,7 @@ impl NodeConnection {
             handle: None,
             settings,
             cluster_mode,
-            rng: SmallRng::from_entropy(),
+            rng: SmallRng::from_rng(&mut rand::rng()),
             previous_candidates: None,
         })
     }
@@ -1298,7 +1298,8 @@ async fn node_selection(
 ) -> Option<Endpoint> {
     let candidates = match previous_candidates.take() {
         Some(old_candidates) => {
-            let mut new_candidates = candidates_from_old_gossip(failed_endpoint, old_candidates);
+            let mut new_candidates =
+                candidates_from_old_gossip(rng, failed_endpoint, old_candidates);
 
             // Use case: when the cluster is only comprised of a single node and that node
             // previously failed. This can only happen if the user used a fixed set of seeds.
@@ -1377,11 +1378,9 @@ impl Candidates {
         }
     }
 
-    fn shuffle(&mut self) {
-        let mut rng = rand::thread_rng();
-
-        self.nodes.shuffle(&mut rng);
-        self.managers.shuffle(&mut rng);
+    fn shuffle(&mut self, rng: &mut SmallRng) {
+        self.nodes.shuffle(rng);
+        self.managers.shuffle(rng);
     }
 
     fn endpoints(mut self) -> Vec<Endpoint> {
@@ -1392,6 +1391,7 @@ impl Candidates {
 }
 
 fn candidates_from_old_gossip(
+    rng: &mut SmallRng,
     failed_endpoint: &Option<Endpoint>,
     old_candidates: Vec<Member>,
 ) -> Vec<Endpoint> {
@@ -1404,17 +1404,17 @@ fn candidates_from_old_gossip(
         None => old_candidates,
     };
 
-    arrange_gossip_candidates(candidates)
+    arrange_gossip_candidates(rng, candidates)
 }
 
-fn arrange_gossip_candidates(candidates: Vec<Member>) -> Vec<Endpoint> {
+fn arrange_gossip_candidates(rng: &mut SmallRng, candidates: Vec<Member>) -> Vec<Endpoint> {
     let mut arranged_candidates = Candidates::new();
 
     for member in candidates {
         arranged_candidates.push(member);
     }
 
-    arranged_candidates.shuffle();
+    arranged_candidates.shuffle(rng);
     arranged_candidates.endpoints()
 }
 
@@ -1506,7 +1506,7 @@ mod node_selection_tests {
 
     fn generate_test_case(pref: NodePreference) {
         let mut members = Vec::new();
-        let mut rng = SmallRng::from_entropy();
+        let mut rng = SmallRng::from_rng(&mut rand::rng());
 
         members.push(MemberInfo {
             instance_id: uuid::Uuid::new_v4(),
