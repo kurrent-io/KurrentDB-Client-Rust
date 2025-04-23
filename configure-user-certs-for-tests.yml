@@ -8,7 +8,7 @@ services:
     network_mode: "none"
 
   setup:
-    image: ghcr.io/eventstore/es-gencert-cli:latest
+    image: docker.eventstore.com/eventstore-utils/es-gencert-cli:latest
     entrypoint: bash
     user: "1000:1000"
     command: >

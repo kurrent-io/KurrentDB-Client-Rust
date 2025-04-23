@@ -49,9 +49,9 @@ impl StatsOptions {
 }
 
 impl Client {
-    pub fn new(setts: ClientSettings) -> Self {
-        let inner = crate::grpc::GrpcClient::create(tokio::runtime::Handle::current(), setts);
-        Self { inner }
+    pub fn new(setts: ClientSettings) -> eyre::Result<Self> {
+        let inner = crate::grpc::GrpcClient::create(tokio::runtime::Handle::current(), setts)?;
+        Ok(Self { inner })
     }
 
     pub async fn current_selected_node(&self) -> crate::Result<Endpoint> {

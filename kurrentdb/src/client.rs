@@ -33,7 +33,7 @@ pub struct Client {
 
 impl Client {
     /// Creates a gRPC client to a KurrentDB database.
-    pub fn new(settings: ClientSettings) -> crate::Result<Self> {
+    pub fn new(settings: ClientSettings) -> eyre::Result<Self> {
         Client::with_runtime_handle(tokio::runtime::Handle::current(), settings)
     }
 
@@ -41,8 +41,8 @@ impl Client {
     pub fn with_runtime_handle(
         handle: tokio::runtime::Handle,
         settings: ClientSettings,
-    ) -> crate::Result<Self> {
-        let client = GrpcClient::create(handle, settings.clone());
+    ) -> eyre::Result<Self> {
+        let client = GrpcClient::create(handle, settings.clone())?;
 
         let http_client = reqwest::Client::builder()
             .danger_accept_invalid_certs(!settings.is_tls_certificate_verification_enabled())

@@ -294,20 +294,20 @@ fn default_keep_alive_timeout() -> Duration {
 /// connection string, that setting default value is used.
 ///
 /// * `maxDiscoverAttempts`: default `3`. Maximum number of DNS discovery attempts before the
-///    connection gives up.
+///   connection gives up.
 ///
 /// * `discoveryInterval`: default `500ms`. Waiting period between discovery attempts.
 ///
 /// * `gossipTimeout`: default `3s`: Waiting period before a gossip request timeout.
-///    __*TODO - Current behavior doesn't timeout at all.*__
+///   __*TODO - Current behavior doesn't timeout at all.*__
 ///
 /// * `tls`: default `true`. Use a secure connection.
 ///
 /// * `tlsVerifyCert`: default `true`. When using a secure connection, perform a certification
-///    verification.
+///   verification.
 ///
 /// * `nodePreference`: default `random`. When in a cluster connection, indicates what type of node
-///    a connection should pick. Keep in mind that's best effort. Supported values are:
+///   a connection should pick. Keep in mind that's best effort. Supported values are:
 ///    * `leader`
 ///    * `random`
 ///    * `follower`
@@ -812,7 +812,7 @@ pub(crate) mod defaults {
 }
 
 pub(crate) type HyperClient =
-    hyper_util::client::legacy::Client<HttpsConnector<HttpConnector>, tonic::body::BoxBody>;
+    hyper_util::client::legacy::Client<HttpsConnector<HttpConnector>, tonic::body::Body>;
 
 struct NodeConnection {
     id: Uuid,
@@ -848,7 +848,7 @@ pub(crate) struct HandleInfo {
 static RUSTLS_INIT: Once = Once::new();
 
 impl NodeConnection {
-    fn new(settings: ClientSettings) -> Self {
+    fn new(settings: ClientSettings) -> eyre::Result<Self> {
         let mut roots = rustls::RootCertStore::empty();
 
         RUSTLS_INIT.call_once(|| {
@@ -859,16 +859,20 @@ impl NodeConnection {
 
         if let Some(cert) = settings.tls_ca_file() {
             let cert_chain: Result<Vec<CertificateDer<'_>>, _> =
-                CertificateDer::pem_file_iter(cert).unwrap().collect();
+                CertificateDer::pem_file_iter(cert)?.collect();
 
             for cert in cert_chain.unwrap() {
-                roots.add(cert).unwrap();
+                roots.add(cert)?;
             }
         } else {
-            for cert in
-                rustls_native_certs::load_native_certs().expect("could not load platform certs")
-            {
-                roots.add(cert).unwrap();
+            let result = rustls_native_certs::load_native_certs();
+
+            if result.certs.is_empty() {
+                eyre::bail!("could not load native certificates: {:?}", result.errors);
+            }
+
+            for cert in result.certs {
+                roots.add(cert)?;
             }
         }
 
@@ -876,13 +880,9 @@ impl NodeConnection {
 
         let mut tls = if let Some((cert, key)) = settings.user_certificate() {
             let cert_chain: Result<Vec<CertificateDer<'_>>, _> =
-                CertificateDer::pem_file_iter(cert).unwrap().collect();
+                CertificateDer::pem_file_iter(cert)?.collect();
 
-            tls.with_client_auth_cert(
-                cert_chain.unwrap(),
-                PrivateKeyDer::from_pem_file(key).unwrap(),
-            )
-            .unwrap()
+            tls.with_client_auth_cert(cert_chain?, PrivateKeyDer::from_pem_file(key)?)?
         } else {
             tls.with_no_client_auth()
         };
@@ -911,7 +911,7 @@ impl NodeConnection {
                 .http2_only(true)
                 .http2_keep_alive_interval(settings.keep_alive_interval)
                 .http2_keep_alive_timeout(settings.keep_alive_timeout)
-                .build::<_, tonic::body::BoxBody>(connector);
+                .build::<_, tonic::body::Body>(connector);
 
         let cluster_mode = if settings.dns_discover || settings.hosts().len() > 1 {
             let mode = if settings.dns_discover {
@@ -926,15 +926,15 @@ impl NodeConnection {
             None
         };
 
-        Self {
+        Ok(Self {
             id: Uuid::nil(),
             client,
             handle: None,
             settings,
             cluster_mode,
-            rng: SmallRng::from_entropy(),
+            rng: SmallRng::from_rng(&mut rand::rng()),
             previous_candidates: None,
-        }
+        })
     }
 
     #[tracing::instrument(skip(self, request))]
@@ -1059,13 +1059,12 @@ impl NodeConnection {
 
 fn connection_state_machine(
     handle: tokio::runtime::Handle,
-    settings: ClientSettings,
+    mut connection: NodeConnection,
 ) -> UnboundedSender<Msg> {
     let (sender, mut consumer) = tokio::sync::mpsc::unbounded_channel::<Msg>();
     let dup_sender = sender.clone();
 
     handle.spawn(async move {
-        let mut connection = NodeConnection::new(settings);
         let mut handle_opt: Option<Handle> = None;
 
         while let Some(msg) = consumer.recv().await {
@@ -1213,13 +1212,14 @@ pub struct GrpcClient {
 }
 
 impl GrpcClient {
-    pub fn create(handle: tokio::runtime::Handle, connection_settings: ClientSettings) -> Self {
-        let sender = connection_state_machine(handle, connection_settings.clone());
+    pub fn create(handle: tokio::runtime::Handle, settings: ClientSettings) -> eyre::Result<Self> {
+        let connection = NodeConnection::new(settings.clone())?;
+        let sender = connection_state_machine(handle, connection);
 
-        GrpcClient {
+        Ok(GrpcClient {
             sender,
-            connection_settings,
-        }
+            connection_settings: settings,
+        })
     }
 
     pub(crate) async fn execute<F, Fut, A>(&self, action: F) -> crate::Result<A>
@@ -1298,7 +1298,8 @@ async fn node_selection(
 ) -> Option<Endpoint> {
     let candidates = match previous_candidates.take() {
         Some(old_candidates) => {
-            let mut new_candidates = candidates_from_old_gossip(failed_endpoint, old_candidates);
+            let mut new_candidates =
+                candidates_from_old_gossip(rng, failed_endpoint, old_candidates);
 
             // Use case: when the cluster is only comprised of a single node and that node
             // previously failed. This can only happen if the user used a fixed set of seeds.
@@ -1377,11 +1378,9 @@ impl Candidates {
         }
     }
 
-    fn shuffle(&mut self) {
-        let mut rng = rand::thread_rng();
-
-        self.nodes.shuffle(&mut rng);
-        self.managers.shuffle(&mut rng);
+    fn shuffle(&mut self, rng: &mut SmallRng) {
+        self.nodes.shuffle(rng);
+        self.managers.shuffle(rng);
     }
 
     fn endpoints(mut self) -> Vec<Endpoint> {
@@ -1392,6 +1391,7 @@ impl Candidates {
 }
 
 fn candidates_from_old_gossip(
+    rng: &mut SmallRng,
     failed_endpoint: &Option<Endpoint>,
     old_candidates: Vec<Member>,
 ) -> Vec<Endpoint> {
@@ -1404,17 +1404,17 @@ fn candidates_from_old_gossip(
         None => old_candidates,
     };
 
-    arrange_gossip_candidates(candidates)
+    arrange_gossip_candidates(rng, candidates)
 }
 
-fn arrange_gossip_candidates(candidates: Vec<Member>) -> Vec<Endpoint> {
+fn arrange_gossip_candidates(rng: &mut SmallRng, candidates: Vec<Member>) -> Vec<Endpoint> {
     let mut arranged_candidates = Candidates::new();
 
     for member in candidates {
         arranged_candidates.push(member);
     }
 
-    arranged_candidates.shuffle();
+    arranged_candidates.shuffle(rng);
     arranged_candidates.endpoints()
 }
 
@@ -1506,7 +1506,7 @@ mod node_selection_tests {
 
     fn generate_test_case(pref: NodePreference) {
         let mut members = Vec::new();
-        let mut rng = SmallRng::from_entropy();
+        let mut rng = SmallRng::from_rng(&mut rand::rng());
 
         members.push(MemberInfo {
             instance_id: uuid::Uuid::new_v4(),
