@@ -1073,12 +1073,27 @@ pub enum SubscriptionEvent {
     /// If running a subscription to $all, indicates the position of the $all last's event.
     LastAllPosition(Position),
 
-    /// Indicates the subscription has reached the head of the stream.
-    CaughtUp,
+    /// Indicates the subscription has reached the head of the stream. Is `None` if the server
+    /// doesn't support sending checkpoint information.
+    CaughtUp(Option<CaughtUp>),
 
     /// Indicates the subscription has fell behind, meaning it's no longer keeping up with the
-    /// stream's pace.
-    FellBehind,
+    /// stream's pace. Is `None` if the server doesn't support sending checkpoint information.
+    FellBehind(Option<FellBehind>),
+}
+
+#[derive(Debug)]
+pub struct CaughtUp {
+    pub date: DateTime<Utc>,
+    pub stream_revision: Option<u64>,
+    pub position: Option<Position>,
+}
+
+#[derive(Debug)]
+pub struct FellBehind {
+    pub date: DateTime<Utc>,
+    pub stream_revision: Option<u64>,
+    pub position: Option<Position>,
 }
 
 #[derive(Debug)]

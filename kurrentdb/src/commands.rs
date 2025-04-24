@@ -1,8 +1,9 @@
 #![allow(clippy::large_enum_variant)]
 //! Commands this client supports.
 use std::ops::Add;
-use std::time::{Duration, SystemTime};
+use std::time::{Duration, SystemTime, UNIX_EPOCH};
 
+use chrono::{DateTime, Utc};
 use futures::TryStreamExt;
 use nom::AsBytes;
 use tokio::sync::mpsc;
@@ -838,12 +839,30 @@ impl Subscription {
                                     }));
                                 }
 
-                                streams::read_resp::Content::CaughtUp(_) => {
-                                    return Ok(SubscriptionEvent::CaughtUp);
+                                streams::read_resp::Content::CaughtUp(args) => {
+                                    let args = args.timestamp.map(|t| crate::CaughtUp {
+                                        date: timestamp_to_datetime(t),
+                                        stream_revision: args.stream_revision.map(|x| x as u64),
+                                        position: args.position.map(|x| Position {
+                                            commit: x.commit_position,
+                                            prepare: x.prepare_position,
+                                        }),
+                                    });
+
+                                    return Ok(SubscriptionEvent::CaughtUp(args));
                                 }
 
-                                streams::read_resp::Content::FellBehind(_) => {
-                                    return Ok(SubscriptionEvent::FellBehind);
+                                streams::read_resp::Content::FellBehind(args) => {
+                                    let args = args.timestamp.map(|t| crate::FellBehind {
+                                        date: timestamp_to_datetime(t),
+                                        stream_revision: args.stream_revision.map(|x| x as u64),
+                                        position: args.position.map(|x| Position {
+                                            commit: x.commit_position,
+                                            prepare: x.prepare_position,
+                                        }),
+                                    });
+
+                                    return Ok(SubscriptionEvent::FellBehind(args));
                                 }
 
                                 _ => unreachable!(),
@@ -906,6 +925,10 @@ impl Subscription {
             }
         }
     }
+}
+
+fn timestamp_to_datetime(t: prost_types::Timestamp) -> DateTime<Utc> {
+    (UNIX_EPOCH + Duration::new(t.seconds as u64, t.nanos as u32)).into()
 }
 
 /// Runs the subscription command.
