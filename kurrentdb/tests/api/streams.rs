@@ -332,7 +332,7 @@ async fn test_subscription_caughtup(client: &Client) -> kurrentdb::Result<()> {
 
     tokio::spawn(async move {
         loop {
-            if let SubscriptionEvent::CaughtUp = sub.next_subscription_event().await? {
+            if let SubscriptionEvent::CaughtUp(_) = sub.next_subscription_event().await? {
                 break;
             }
         }

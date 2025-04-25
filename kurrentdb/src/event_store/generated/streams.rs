@@ -191,10 +191,40 @@ pub struct ReadResp {
 }
 /// Nested message and enum types in `ReadResp`.
 pub mod read_resp {
+    /// The $all or stream subscription has caught up and become live.
     #[derive(Clone, Copy, PartialEq, ::prost::Message)]
-    pub struct CaughtUp {}
+    pub struct CaughtUp {
+        /// Current time in the server when the subscription caught up
+        #[prost(message, optional, tag = "1")]
+        pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+        /// Checkpoint for resuming a stream subscription.
+        /// For stream subscriptions it is populated unless the stream is empty.
+        /// For $all subscriptions it is not populated.
+        #[prost(int64, optional, tag = "2")]
+        pub stream_revision: ::core::option::Option<i64>,
+        /// Checkpoint for resuming a $all subscription.
+        /// For stream subscriptions it is not populated.
+        /// For $all subscriptions it is populated unless the database is empty.
+        #[prost(message, optional, tag = "3")]
+        pub position: ::core::option::Option<Position>,
+    }
+    /// The $all or stream subscription has fallen back into catchup mode and is no longer live.
     #[derive(Clone, Copy, PartialEq, ::prost::Message)]
-    pub struct FellBehind {}
+    pub struct FellBehind {
+        /// Current time in the server when the subscription fell behind
+        #[prost(message, optional, tag = "1")]
+        pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+        /// Checkpoint for resuming a stream subscription.
+        /// For stream subscriptions it is populated unless the stream is empty.
+        /// For $all subscriptions it is not populated.
+        #[prost(int64, optional, tag = "2")]
+        pub stream_revision: ::core::option::Option<i64>,
+        /// Checkpoint for resuming a $all subscription.
+        /// For stream subscriptions it is not populated.
+        /// For $all subscriptions it is populated unless the database is empty.
+        #[prost(message, optional, tag = "3")]
+        pub position: ::core::option::Option<Position>,
+    }
     #[derive(Clone, PartialEq, ::prost::Message)]
     pub struct ReadEvent {
         #[prost(message, optional, tag = "1")]
@@ -245,6 +275,16 @@ pub mod read_resp {
     }
     #[derive(Clone, Copy, PartialEq, ::prost::Message)]
     pub struct Checkpoint {
+        #[prost(uint64, tag = "1")]
+        pub commit_position: u64,
+        #[prost(uint64, tag = "2")]
+        pub prepare_position: u64,
+        /// Current time in the server when the checkpoint was reached
+        #[prost(message, optional, tag = "3")]
+        pub timestamp: ::core::option::Option<::prost_types::Timestamp>,
+    }
+    #[derive(Clone, Copy, PartialEq, ::prost::Message)]
+    pub struct Position {
         #[prost(uint64, tag = "1")]
         pub commit_position: u64,
         #[prost(uint64, tag = "2")]
