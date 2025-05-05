@@ -189,6 +189,55 @@ pub struct WriteResult {
     pub position: Position,
 }
 
+#[derive(Debug)]
+pub struct AppendRequest {
+    pub stream: String,
+    pub events: Vec<EventData>,
+    pub state: StreamState,
+}
+
+/// Returned after writing to multiple streams.
+#[derive(Debug)]
+pub enum MultiWriteResult {
+    Success(Vec<MultiWriteSuccess>),
+    Failure(Vec<MultiWriteFailure>),
+}
+
+#[derive(Debug)]
+pub struct MultiWriteSuccess {
+    /// Stream name.
+    pub stream: String,
+
+    /// Next expected version of the stream.
+    pub next_expected_version: u64,
+
+    /// `Position` of the write.
+    pub position: Position,
+}
+
+#[derive(Debug)]
+pub struct MultiWriteFailure {
+    pub stream: String,
+    pub error: MultiAppendWriteError,
+}
+
+#[derive(Debug)]
+pub enum MultiAppendWriteError {
+    AccessDenied {
+        reason: String,
+    },
+
+    StreamDeleted {
+        deleted_at: Option<DateTime<Utc>>,
+        tombstoned: bool,
+    },
+
+    WrongExpectedRevision {
+        current: CurrentRevision,
+        expected: StreamState,
+    },
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum StreamPosition<A> {
     Start,
@@ -1448,6 +1497,8 @@ pub enum Error {
     InitializationError(String),
     #[error("Illegal state error: {0}")]
     IllegalStateError(String),
+    #[error("Illegal operation error: {0}")]
+    IllegalOperation(String),
     #[error("Wrong expected version: expected '{expected}' but got '{current}'")]
     WrongExpectedVersion {
         expected: StreamState,

@@ -1,10 +1,15 @@
 use crate::{
-    CurrentRevision, EventData, PersistentSubscriptionConnectionInfo, PersistentSubscriptionEvent,
-    PersistentSubscriptionInfo, PersistentSubscriptionMeasurements, PersistentSubscriptionSettings,
-    PersistentSubscriptionStats, Position, RecordedEvent, ResolvedEvent, RevisionOrPosition,
-    StreamPosition, StreamState, SystemConsumerStrategy, WriteResult,
+    AppendRequest, CurrentRevision, EventData, MultiAppendWriteError, MultiWriteFailure,
+    MultiWriteResult, MultiWriteSuccess, PersistentSubscriptionConnectionInfo,
+    PersistentSubscriptionEvent, PersistentSubscriptionInfo, PersistentSubscriptionMeasurements,
+    PersistentSubscriptionSettings, PersistentSubscriptionStats, Position, RecordedEvent,
+    ResolvedEvent, RevisionOrPosition, StreamPosition, StreamState, SystemConsumerStrategy,
+    WriteResult,
 };
-use chrono::{DateTime, Utc};
+use chrono::{DateTime, TimeZone, Utc};
+use new_streams::dynamic_value::Kind;
+use new_streams::{DynamicValue, multi_stream_append_response};
+use std::collections::HashMap;
 use std::ops::Add;
 use std::time::{Duration, SystemTime};
 
@@ -12,6 +17,7 @@ pub mod common;
 pub mod google_rpc;
 pub mod gossip;
 pub mod monitoring;
+pub mod new_streams;
 pub mod operations;
 pub mod persistent;
 pub mod projections;
@@ -418,6 +424,97 @@ impl TryFrom<persistent::SubscriptionInfo> for PersistentSubscriptionInfo<Revisi
             }),
             stats,
         })
+    }
+}
+
+impl From<EventData> for new_streams::AppendRecord {
+    fn from(value: EventData) -> Self {
+        let mut properties = HashMap::new();
+
+        for (key, value) in value.metadata {
+            properties.insert(
+                key,
+                DynamicValue {
+                    kind: Some(Kind::StringValue(value)),
+                },
+            );
+        }
+
+        Self {
+            record_id: value.id_opt.map(|x| x.to_string()),
+            properties,
+            data: value.payload,
+        }
+    }
+}
+
+impl From<AppendRequest> for new_streams::AppendStreamRequest {
+    fn from(value: AppendRequest) -> Self {
+        Self {
+            stream: value.stream,
+            records: value.events.into_iter().map(|e| e.into()).collect(),
+            expected_revision: Some(match value.state {
+                StreamState::Any => -2,
+                StreamState::StreamExists => -4,
+                StreamState::NoStream => -1,
+                StreamState::StreamRevision(r) => r as i64,
+            }),
+        }
+    }
+}
+
+impl From<new_streams::MultiStreamAppendResponse> for MultiWriteResult {
+    fn from(value: new_streams::MultiStreamAppendResponse) -> Self {
+        match value.result.unwrap() {
+            multi_stream_append_response::Result::Success(s) => {
+                Self::Success(s.output.into_iter().map(|i| i.into()).collect())
+            }
+            multi_stream_append_response::Result::Failure(f) => {
+                Self::Failure(f.output.into_iter().map(|i| i.into()).collect())
+            }
+        }
+    }
+}
+
+impl From<new_streams::AppendStreamSuccess> for MultiWriteSuccess {
+    fn from(value: new_streams::AppendStreamSuccess) -> Self {
+        Self {
+            stream: value.stream,
+            next_expected_version: value.stream_revision as u64,
+            position: Position {
+                commit: value.position as u64,
+                prepare: value.position as u64,
+            },
+        }
+    }
+}
+
+impl From<new_streams::AppendStreamFailure> for MultiWriteFailure {
+    fn from(value: new_streams::AppendStreamFailure) -> Self {
+        Self {
+            stream: value.stream,
+            error: match value.error.unwrap() {
+                new_streams::append_stream_failure::Error::WrongExpectedRevision(e) => {
+                    MultiAppendWriteError::WrongExpectedRevision {
+                        current: CurrentRevision::Current(e.stream_revision as u64),
+                        expected: StreamState::StreamRevision(42), // <-- we need to add the actual expected value.
+                    }
+                }
+
+                new_streams::append_stream_failure::Error::AccessDenied(e) => {
+                    MultiAppendWriteError::AccessDenied { reason: e.reason }
+                }
+
+                new_streams::append_stream_failure::Error::StreamDeleted(e) => {
+                    MultiAppendWriteError::StreamDeleted {
+                        deleted_at: e
+                            .deleted_at
+                            .and_then(|t| Utc.timestamp_opt(t.seconds, t.nanos as u32).single()),
+                        tombstoned: e.tombstoned,
+                    }
+                }
+            },
+        }
     }
 }
 

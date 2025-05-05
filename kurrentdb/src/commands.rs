@@ -1870,7 +1870,7 @@ pub async fn restart_persistent_subscription_subsystem(
     Ok(())
 }
 
-fn create_streams_client(handle: Handle) -> StreamsClient<HyperClient> {
+pub(crate) fn create_streams_client(handle: Handle) -> StreamsClient<HyperClient> {
     StreamsClient::with_origin(handle.client, handle.uri)
         .max_decoding_message_size(client::MAX_RECEIVE_MESSAGE_SIZE)
 }
