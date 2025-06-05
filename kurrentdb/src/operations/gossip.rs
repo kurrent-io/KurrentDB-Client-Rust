@@ -22,7 +22,14 @@ pub async fn read(
 
     let mut members = Vec::with_capacity(wire_members.capacity());
     for wire_member in wire_members {
-        let state = VNodeState::from_i32(wire_member.state)?;
+        let state = if let Some(s) = VNodeState::from_i32(wire_member.state) {
+            s
+        } else {
+            return Err(Status::out_of_range(format!(
+                "Unknown VNodeState value: {}",
+                wire_member.state
+            )));
+        };
 
         let instance_id = if let Some(wire_uuid) = wire_member.instance_id {
             wire_uuid.try_into().unwrap()
@@ -172,28 +179,25 @@ pub enum VNodeState {
 }
 
 impl VNodeState {
-    pub fn from_i32(value: i32) -> Result<Self, Status> {
+    pub fn from_i32(value: i32) -> Option<Self> {
         match value {
-            0 => Ok(VNodeState::Initializing),
-            1 => Ok(VNodeState::DiscoverLeader),
-            2 => Ok(VNodeState::Unknown),
-            3 => Ok(VNodeState::PreReplica),
-            4 => Ok(VNodeState::CatchingUp),
-            5 => Ok(VNodeState::Clone),
-            6 => Ok(VNodeState::Follower),
-            7 => Ok(VNodeState::PreLeader),
-            8 => Ok(VNodeState::Leader),
-            9 => Ok(VNodeState::Manager),
-            10 => Ok(VNodeState::ShuttingDown),
-            11 => Ok(VNodeState::Shutdown),
-            12 => Ok(VNodeState::ReadOnlyLeaderLess),
-            13 => Ok(VNodeState::PreReadOnlyReplica),
-            14 => Ok(VNodeState::ReadOnlyReplica),
-            15 => Ok(VNodeState::ResigningLeader),
-            _ => Err(Status::out_of_range(format!(
-                "Unknown VNodeState value: {}",
-                value
-            ))),
+            0 => Some(VNodeState::Initializing),
+            1 => Some(VNodeState::DiscoverLeader),
+            2 => Some(VNodeState::Unknown),
+            3 => Some(VNodeState::PreReplica),
+            4 => Some(VNodeState::CatchingUp),
+            5 => Some(VNodeState::Clone),
+            6 => Some(VNodeState::Follower),
+            7 => Some(VNodeState::PreLeader),
+            8 => Some(VNodeState::Leader),
+            9 => Some(VNodeState::Manager),
+            10 => Some(VNodeState::ShuttingDown),
+            11 => Some(VNodeState::Shutdown),
+            12 => Some(VNodeState::ReadOnlyLeaderLess),
+            13 => Some(VNodeState::PreReadOnlyReplica),
+            14 => Some(VNodeState::ReadOnlyReplica),
+            15 => Some(VNodeState::ResigningLeader),
+            _ => None,
         }
     }
 }
