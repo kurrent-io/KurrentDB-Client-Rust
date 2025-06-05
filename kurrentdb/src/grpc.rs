@@ -867,12 +867,14 @@ impl NodeConnection {
         } else {
             let result = rustls_native_certs::load_native_certs();
 
-            if result.certs.is_empty() {
-                eyre::bail!("could not load native certificates: {:?}", result.errors);
+            for e in result.errors {
+                tracing::warn!(error = %e, "could not load native certificate");
             }
 
             for cert in result.certs {
-                roots.add(cert)?;
+                if let Err(e) = roots.add(cert) {
+                    tracing::warn!(error = %e, "could not add native certificate to the store");
+                }
             }
         }
 
