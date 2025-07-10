@@ -39,3 +39,8 @@ crate-type = ["staticlib"]
 name = "persistent_subscriptions"
 path = "persistent_subscriptions.rs"
 crate-type = ["staticlib"]
+
+[[example]]
+name = "user_certificates"
+path = "user_certificates.rs"
+crate-type = ["staticlib"]
