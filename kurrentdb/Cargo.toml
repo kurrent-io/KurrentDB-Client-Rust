@@ -13,7 +13,7 @@ description = "Official KurrentDB gRPC client"
 keywords = ["database", "event-sourcing", "ddd", "cqrs", "kurrent"]
 license = "MIT"
 readme = "../README.md"
-repository = "https://github.com/EventStore/EventStoreDB-Client-Rust"
+repository = "https://github.com/kurrent-io/KurrentDB-Client-Rust"
 
 categories = ["database", "api-bindings"]
 
