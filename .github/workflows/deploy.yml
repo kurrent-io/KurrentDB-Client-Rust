@@ -22,4 +22,4 @@ jobs:
       run: cargo login $TOKEN
     - name: Upload
       run: |
-        cargo publish -p eventstore
+        cargo publish -p kurrentdb
