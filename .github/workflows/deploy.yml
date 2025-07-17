@@ -1,25 +1,43 @@
-name: Deployment
+# name: Deployment
 
+# on:
+#   push:
+#     tags:
+#       - '*'
+
+# jobs:
+#   deploy:
+
+#     runs-on: ubuntu-latest
+
+#     steps:
+#     - uses: actions/checkout@v1
+#     - name: Install latest Rust stable toolchain
+#       run: |
+#         rustup update
+#         rustup default stable
+#     - name: Login on Crates.IO
+#       env:
+#         TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
+#       run: cargo login $TOKEN
+#     - name: Upload
+#       run: |
+#         cargo publish -p kurrentdb
+
+
+name: Publish to crates.io
 on:
   push:
-    tags:
-      - '*'
-
+    tags: ['*']
 jobs:
-  deploy:
-
+  publish:
     runs-on: ubuntu-latest
-
+    permissions:
+      id-token: write
     steps:
-    - uses: actions/checkout@v1
-    - name: Install latest Rust stable toolchain
-      run: |
-        rustup update
-        rustup default stable
-    - name: Login on Crates.IO
+    - uses: actions/checkout@v4
+    - uses: rust-lang/crates-io-auth-action@v1
+      id: auth
+    - run: cargo publish
       env:
-        TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
-      run: cargo login $TOKEN
-    - name: Upload
-      run: |
-        cargo publish -p kurrentdb
+        CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
