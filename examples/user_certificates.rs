@@ -4,8 +4,8 @@
 #![allow(unused_variables)]
 #![allow(unreachable_code)]
 
-use std::error::Error;
 use kurrentdb::Client;
+use std::error::Error;
 
 type Result<A> = std::result::Result<A, Box<dyn Error>>;
 
