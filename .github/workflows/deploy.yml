@@ -32,6 +32,7 @@ on:
 jobs:
   publish:
     runs-on: ubuntu-latest
+    environment: CRATES_IO_TOKEN
     permissions:
       id-token: write
     steps:
