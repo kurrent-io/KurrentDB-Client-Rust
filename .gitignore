@@ -19,3 +19,7 @@ cached_cargo/
 
 # Jetbrains IDEs files
 .idea/
+
+.cache
+.temp
+node_modules
