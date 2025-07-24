@@ -4,16 +4,16 @@ order: 3
 
 # Reading Events
 
-EventStoreDB provides two primary methods for reading events: reading from an
+KurrentDB provides two primary methods for reading events: reading from an
 individual stream to retrieve events from a specific named stream, or reading
 from the `$all` stream to access all events across the entire event store.
 
-Events in EventStoreDB are organized within individual streams and use two
+Events in KurrentDB are organized within individual streams and use two
 distinct positioning systems to track their location. The **revision number** is
 a 64-bit signed integer (`long`) that represents the sequential position of an
 event within its specific stream. Events are numbered starting from 0, with each
 new event receiving the next sequential revision number (0, 1, 2, 3...). The
-**global position** represents the event's location in EventStoreDB's global
+**global position** represents the event's location in KurrentDB's global
 transaction log and consists of two coordinates: the `commit` position (where
 the transaction was committed in the log) and the `prepare` position (where the
 transaction was initially prepared).
@@ -83,7 +83,7 @@ let options = ReadStreamOptions::default()
 
 #### resolveLinkTos
 
-When using projections to create new events you can set whether the generated events are pointers to existing events. Setting this value to true will tell EventStoreDB to return the event as well as the event linking to it.
+When using projections to create new events you can set whether the generated events are pointers to existing events. Setting this value to true will tell KurrentDB to return the event as well as the event linking to it.
 
 ```rs
 let options = ReadAllOptions::default().resolve_link_tos();
@@ -200,7 +200,7 @@ let options = ReadAllOptions::default()
 
 #### resolveLinkTos
 
-When using projections to create new events you can set whether the generated events are pointers to existing events. Setting this value to true will tell EventStoreDB to return the event as well as the event linking to it.
+When using projections to create new events you can set whether the generated events are pointers to existing events. Setting this value to true will tell KurrentDB to return the event as well as the event linking to it.
 
 ```rs
 let options = ReadAllOptions::default().resolve_link_tos();
@@ -217,7 +217,7 @@ let options = ReadAllOptions::default()
 ### Reading backwards
 
 In addition to reading the `$all` stream forwards, it can be read backwards. To
-read all the events backwards, set the _direction_ to `esdb.Backwards`:
+read all the events backwards, set the _direction_ to `kurrentdb.Backwards`:
 
 ```rs
 let options = ReadAllOptions::default().position(StreamPosition::End);
@@ -231,7 +231,7 @@ Read one event backwards to find the last position in the `$all` stream.
 
 ### Handling system events
 
-EventStoreDB will also return system events when reading from the `$all` stream. In most cases you can ignore these events.
+KurrentDB will also return system events when reading from the `$all` stream. In most cases you can ignore these events.
 
 All system events begin with `$` or `$$` and can be easily ignored by checking the `event_type` property.
 

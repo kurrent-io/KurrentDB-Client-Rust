@@ -113,7 +113,7 @@ let options = SubscribeToAllOptions::default().position(StreamPosition::End);
 
 ## Resolving link-to events
 
-Link-to events point to events in other streams in EventStoreDB. These are
+Link-to events point to events in other streams in KurrentDB. These are
 generally created by projections such as the `$by_event_type` projection which
 links events of the same event type into the same stream. This makes it easier
 to look up all events of a specific type.
@@ -223,7 +223,7 @@ let options =
 
 ## Server-side Filtering
 
-EventStoreDB allows you to filter events while subscribing to the `$all` stream to only receive the events you care about. You can filter by event type or stream name using a regular expression or a prefix. Server-side filtering is currently only available on the `$all` stream.
+KurrentDB allows you to filter events while subscribing to the `$all` stream to only receive the events you care about. You can filter by event type or stream name using a regular expression or a prefix. Server-side filtering is currently only available on the `$all` stream.
 
 ::: tip
 Server-side filtering was introduced as a simpler alternative to projections. You should consider filtering before creating a projection to include the events you care about.

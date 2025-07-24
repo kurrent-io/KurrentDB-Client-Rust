@@ -32,6 +32,6 @@ The client supports the following parameters:
 To authenticate, include these two parameters in your connection string or constructor when initializing the client:
 
 ```rs
-let settings = "esdb://localhost:2113?tls=true&userCertFile={pathToCaFile}&userKeyFile={pathToKeyFile}".parse()?;
+let settings = "kurrentdb://localhost:2113?tls=true&userCertFile={pathToCaFile}&userKeyFile={pathToKeyFile}".parse()?;
 let client = Client::new(settings)?;
 ```
