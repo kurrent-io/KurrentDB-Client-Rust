@@ -89,3 +89,6 @@ Bear in mind that this client is not yet properly documented. We are working har
 [KurrentDB Docs]: https://developers.kurrent.io/latest.html
 [kurrent discuss]: https://discuss.kurrent.io/
 [KurrentDB Support]: https://kurrent.io/support/
+
+
+
