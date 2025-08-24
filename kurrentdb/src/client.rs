@@ -7,13 +7,14 @@ use crate::options::read_stream::ReadStreamOptions;
 use crate::options::subscribe_to_stream::SubscribeToStreamOptions;
 use crate::server_features::ServerInfo;
 use crate::{
-    DeletePersistentSubscriptionOptions, DeleteStreamOptions, GetPersistentSubscriptionInfoOptions,
-    ListPersistentSubscriptionsOptions, MetadataStreamName, PersistentSubscription,
-    PersistentSubscriptionInfo, PersistentSubscriptionToAllOptions, Position, ReadStream,
-    ReplayParkedMessagesOptions, RestartPersistentSubscriptionSubsystem, RevisionOrPosition,
-    StreamMetadata, StreamMetadataResult, StreamName, SubscribeToAllOptions,
+    AppendRequest, DeletePersistentSubscriptionOptions, DeleteStreamOptions,
+    GetPersistentSubscriptionInfoOptions, ListPersistentSubscriptionsOptions, MetadataStreamName,
+    MultiWriteResult, PersistentSubscription, PersistentSubscriptionInfo,
+    PersistentSubscriptionToAllOptions, Position, ReadStream, ReplayParkedMessagesOptions,
+    RestartPersistentSubscriptionSubsystem, RevisionOrPosition, StreamMetadata,
+    StreamMetadataResult, StreamName, StreamState, SubscribeToAllOptions,
     SubscribeToPersistentSubscriptionOptions, Subscription, TombstoneStreamOptions,
-    VersionedMetadata, WriteResult, commands,
+    VersionedMetadata, WriteResult, commands, new_commands,
 };
 use crate::{
     EventData,
@@ -78,7 +79,47 @@ impl Client {
     where
         Events: ToEvents,
     {
-        commands::append_to_stream(&self.client, stream_name, options, events.into_events()).await
+        let req = AppendRequest {
+            stream: unsafe { String::from_utf8_unchecked(stream_name.into_stream_name().to_vec()) },
+            events: events.into_events().collect(),
+            state: match options.version {
+                crate::event_store::client::streams::append_req::options::ExpectedStreamRevision::Revision(r) => StreamState::StreamRevision(r),
+                crate::event_store::client::streams::append_req::options::ExpectedStreamRevision::NoStream(_) => StreamState::NoStream,
+                crate::event_store::client::streams::append_req::options::ExpectedStreamRevision::Any(_) => StreamState::Any,
+                crate::event_store::client::streams::append_req::options::ExpectedStreamRevision::StreamExists(_) => StreamState::StreamExists,
+            },
+        };
+
+        let result = self
+            .multi_append_stream(options, vec![req].into_iter())
+            .await?;
+
+        match result {
+            MultiWriteResult::Success(items) => Ok(WriteResult {
+                next_expected_version: items[0].next_expected_version,
+                position: items[0].position,
+            }),
+
+            MultiWriteResult::Failure(items) => match items[0].error {
+                crate::MultiAppendWriteError::AccessDenied { .. } => {
+                    Err(crate::Error::AccessDenied)
+                }
+                crate::MultiAppendWriteError::StreamDeleted { .. } => {
+                    Err(crate::Error::ResourceDeleted)
+                }
+                crate::MultiAppendWriteError::WrongExpectedRevision { current, expected } => {
+                    Err(crate::Error::WrongExpectedVersion { expected, current })
+                }
+            },
+        }
+    }
+
+    pub async fn multi_append_stream(
+        &self,
+        options: &AppendToStreamOptions,
+        events: impl Iterator<Item = AppendRequest> + Send + 'static,
+    ) -> crate::Result<MultiWriteResult> {
+        new_commands::multi_stream_append(&self.client, options, events).await
     }
 
     // Sets a stream metadata.

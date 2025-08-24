@@ -7,7 +7,7 @@ version = "1.0.0"
 # Uncomment if you want to update messages.rs code-gen.
 # We disabled codegen.rs because it requires having `protoc` installed on your machine
 # in order to build that library.
-# build = "codegen.rs"
+build = "codegen.rs"
 
 description = "Official KurrentDB gRPC client"
 keywords = ["database", "event-sourcing", "ddd", "cqrs", "kurrent"]
