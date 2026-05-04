@@ -21,11 +21,11 @@ pub fn http_configure_auth(
 ) -> reqwest::RequestBuilder {
     match auth_opt {
         Some(crate::Authentication::Basic(creds)) => builder.basic_auth(
-            unsafe { std::str::from_utf8_unchecked(creds.login.as_ref()) },
-            unsafe { Some(std::str::from_utf8_unchecked(creds.password.as_ref())) },
+            String::from_utf8_lossy(creds.login.as_ref()),
+            Some(String::from_utf8_lossy(creds.password.as_ref())),
         ),
         Some(crate::Authentication::Bearer(token)) => {
-            builder.bearer_auth(unsafe { std::str::from_utf8_unchecked(token.as_ref()) })
+            builder.bearer_auth(String::from_utf8_lossy(token.as_ref()))
         }
         None => builder,
     }
