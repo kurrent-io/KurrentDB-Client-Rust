@@ -23,7 +23,10 @@ where
                 .map(|c| Cow::Owned(Authentication::Basic(c.clone())))
         });
 
-    if let Some(header_value) = authentication.as_deref().and_then(build_authorization_header) {
+    if let Some(header_value) = authentication
+        .as_deref()
+        .and_then(build_authorization_header)
+    {
         metadata.insert("authorization", header_value);
     }
 
@@ -50,8 +53,8 @@ fn build_authorization_header(
         Authentication::Basic(Credentials { login, password }) => {
             let login = String::from_utf8_lossy(login);
             let password = String::from_utf8_lossy(password);
-            let encoded = base64::engine::general_purpose::STANDARD
-                .encode(format!("{}:{}", login, password));
+            let encoded =
+                base64::engine::general_purpose::STANDARD.encode(format!("{}:{}", login, password));
             format!("Basic {}", encoded)
         }
         Authentication::Bearer(token) => {
@@ -136,8 +139,8 @@ mod auth_tests {
     #[test]
     fn build_request_metadata_skips_bearer_token_with_invalid_chars() {
         let settings = settings_from("esdb://localhost:2113?tls=false");
-        let options = AppendToStreamOptions::default()
-            .authenticated(Authentication::bearer("token\nleak"));
+        let options =
+            AppendToStreamOptions::default().authenticated(Authentication::bearer("token\nleak"));
         let metadata = build_request_metadata(&settings, options.common_operation_options());
         assert!(metadata.get("authorization").is_none());
     }
@@ -166,8 +169,8 @@ mod auth_tests {
     #[test]
     fn per_call_bearer_overrides_default_user() {
         let settings = settings_from("esdb://admin:changeit@localhost:2113?tls=false");
-        let options = AppendToStreamOptions::default()
-            .authenticated(Authentication::bearer("call-token"));
+        let options =
+            AppendToStreamOptions::default().authenticated(Authentication::bearer("call-token"));
         let metadata = build_request_metadata(&settings, options.common_operation_options());
 
         assert_eq!(
