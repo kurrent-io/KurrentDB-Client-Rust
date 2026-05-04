@@ -949,10 +949,10 @@ impl NodeConnection {
 
         loop {
             if let Some(request) = request.take() {
-                if self.id != request.correlation {
-                    if let Some(handle) = self.handle.clone() {
-                        return Ok(handle);
-                    }
+                if self.id != request.correlation
+                    && let Some(handle) = self.handle.clone()
+                {
+                    return Ok(handle);
                 }
 
                 failed_endpoint = self.handle.take().map(|h| h.endpoint);
@@ -1439,7 +1439,7 @@ fn determine_best_node(
 
     let member_opt = members.min_by(|a, b| {
         if let NodePreference::Random = preference {
-            if rng.next_u32() % 2 == 0 {
+            if rng.next_u32().is_multiple_of(2) {
                 return Ordering::Greater;
             }
 
@@ -1447,7 +1447,7 @@ fn determine_best_node(
         }
 
         if preference.match_preference(&a.state) && preference.match_preference(&b.state) {
-            if rng.next_u32() % 2 == 0 {
+            if rng.next_u32().is_multiple_of(2) {
                 return Ordering::Less;
             } else {
                 return Ordering::Greater;
