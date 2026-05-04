@@ -53,6 +53,49 @@ impl Credentials {
     }
 }
 
+/// Authentication mode used when sending a request to KurrentDB.
+///
+/// Supports HTTP Basic auth (login + password) and Bearer token auth (e.g. an
+/// OAuth/OIDC access token). `Authentication` implements `From<Credentials>`,
+/// so any API that accepts `impl Into<Authentication>` continues to accept a
+/// plain `Credentials` value unchanged.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub enum Authentication {
+    Basic(Credentials),
+
+    /// Sent verbatim in the `Authorization: Bearer <token>` header.
+    Bearer(Bytes),
+}
+
+impl Authentication {
+    pub fn basic<S>(login: S, password: S) -> Self
+    where
+        S: Into<Bytes>,
+    {
+        Authentication::Basic(Credentials::new(login, password))
+    }
+
+    pub fn bearer<S>(token: S) -> Self
+    where
+        S: Into<Bytes>,
+    {
+        Authentication::Bearer(token.into())
+    }
+
+    pub(crate) fn kind(&self) -> &'static str {
+        match self {
+            Authentication::Basic(_) => "basic",
+            Authentication::Bearer(_) => "bearer",
+        }
+    }
+}
+
+impl From<Credentials> for Authentication {
+    fn from(credentials: Credentials) -> Self {
+        Authentication::Basic(credentials)
+    }
+}
+
 struct CredsVisitor;
 
 impl<'de> Visitor<'de> for CredsVisitor {

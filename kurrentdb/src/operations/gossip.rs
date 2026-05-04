@@ -78,9 +78,14 @@ pub(crate) async fn http_read(
         .danger_accept_invalid_certs(!setts.tls_verify_cert)
         .build()?;
 
+    let default_auth = setts
+        .default_user_name
+        .as_ref()
+        .map(|c| crate::Authentication::Basic(c.clone()));
+
     let resp = http_configure_auth(
         client.get(format!("{}/gossip", handle.url())),
-        setts.default_user_name.as_ref(),
+        default_auth.as_ref(),
     )
     .send()
     .await?;
