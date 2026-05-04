@@ -80,3 +80,81 @@ pub async fn http_execute_request(
         }
     }
 }
+
+#[cfg(test)]
+mod auth_tests {
+    use super::*;
+    use crate::options::CommonOperationOptions;
+    use crate::{Authentication, ClientSettings, Credentials};
+
+    fn settings_from(connection_string: &str) -> ClientSettings {
+        connection_string
+            .parse::<ClientSettings>()
+            .expect("valid connection string")
+    }
+
+    fn authorization_header(builder: reqwest::RequestBuilder) -> Option<String> {
+        let request = builder.build().expect("buildable request");
+        request
+            .headers()
+            .get(reqwest::header::AUTHORIZATION)
+            .map(|v| v.to_str().expect("ASCII header").to_owned())
+    }
+
+    fn fresh_builder() -> reqwest::RequestBuilder {
+        reqwest::Client::new().get("http://localhost/")
+    }
+
+    #[test]
+    fn http_configure_auth_with_basic_sets_basic_authorization_header() {
+        let auth = Authentication::basic("admin", "changeit");
+        let header = authorization_header(http_configure_auth(fresh_builder(), Some(&auth)))
+            .expect("authorization header present");
+        assert_eq!(header, "Basic YWRtaW46Y2hhbmdlaXQ=");
+    }
+
+    #[test]
+    fn http_configure_auth_with_bearer_sets_bearer_authorization_header() {
+        let auth = Authentication::bearer("abc.def.ghi");
+        let header = authorization_header(http_configure_auth(fresh_builder(), Some(&auth)))
+            .expect("authorization header present");
+        assert_eq!(header, "Bearer abc.def.ghi");
+    }
+
+    #[test]
+    fn http_configure_auth_with_none_leaves_authorization_unset() {
+        assert!(authorization_header(http_configure_auth(fresh_builder(), None)).is_none());
+    }
+
+    #[test]
+    fn resolve_authentication_prefers_per_call_over_default_user() {
+        let settings = settings_from("esdb://admin:changeit@localhost:2113?tls=false");
+        let common = CommonOperationOptions {
+            authentication: Some(Authentication::bearer("call-token")),
+            ..Default::default()
+        };
+
+        let resolved = resolve_authentication(&common, &settings).expect("present");
+        assert_eq!(resolved, Authentication::bearer("call-token"));
+    }
+
+    #[test]
+    fn resolve_authentication_falls_back_to_default_user_as_basic() {
+        let settings = settings_from("esdb://admin:changeit@localhost:2113?tls=false");
+        let common = CommonOperationOptions::default();
+
+        let resolved = resolve_authentication(&common, &settings).expect("present");
+        assert_eq!(
+            resolved,
+            Authentication::Basic(Credentials::new("admin", "changeit"))
+        );
+    }
+
+    #[test]
+    fn resolve_authentication_returns_none_when_neither_configured() {
+        let settings = settings_from("esdb://localhost:2113?tls=false");
+        let common = CommonOperationOptions::default();
+
+        assert!(resolve_authentication(&common, &settings).is_none());
+    }
+}

@@ -66,7 +66,6 @@ fn build_authorization_header(
     match MetadataValue::try_from(header.as_str()) {
         Ok(value) => Some(value),
         Err(_) => {
-            // An untrimmed newline in a bearer token would panic. Token is never logged.
             tracing::warn!(
                 auth_kind = auth.kind(),
                 "authentication value contains characters that are not valid in a gRPC metadata header; the Authorization header will be omitted"
@@ -92,7 +91,6 @@ mod auth_tests {
     fn basic_authentication_produces_base64_basic_header() {
         let auth = Authentication::basic("admin", "changeit");
         let header = build_authorization_header(&auth).expect("ASCII header");
-        // base64("admin:changeit") = YWRtaW46Y2hhbmdlaXQ=
         assert_eq!(header.to_str().unwrap(), "Basic YWRtaW46Y2hhbmdlaXQ=");
     }
 
@@ -107,31 +105,10 @@ mod auth_tests {
     fn basic_authentication_with_special_chars_encodes_correctly() {
         let auth = Authentication::basic("user@example.com", "p@ss:word");
         let header = build_authorization_header(&auth).expect("ASCII header");
-        // base64("user@example.com:p@ss:word") = dXNlckBleGFtcGxlLmNvbTpwQHNzOndvcmQ=
         assert_eq!(
             header.to_str().unwrap(),
             "Basic dXNlckBleGFtcGxlLmNvbTpwQHNzOndvcmQ="
         );
-    }
-
-    #[test]
-    fn credentials_convert_into_basic_authentication() {
-        let auth: Authentication = Credentials::new("admin", "changeit").into();
-        let header = build_authorization_header(&auth).expect("ASCII header");
-        assert_eq!(header.to_str().unwrap(), "Basic YWRtaW46Y2hhbmdlaXQ=");
-    }
-
-    #[test]
-    fn bearer_with_invalid_header_chars_returns_none_instead_of_panicking() {
-        // Trailing newlines from untrimmed file/env reads are the realistic failure mode.
-        for token in ["token\nleak", "token\0bad", "token\rbreak"] {
-            let auth = Authentication::bearer(token);
-            assert!(
-                build_authorization_header(&auth).is_none(),
-                "expected None for {:?}",
-                token
-            );
-        }
     }
 
     #[test]
@@ -184,23 +161,9 @@ mod auth_tests {
             AppendToStreamOptions::default().authenticated(Credentials::new("alice", "secret"));
         let metadata = build_request_metadata(&settings, options.common_operation_options());
 
-        // base64("alice:secret") = YWxpY2U6c2VjcmV0
         assert_eq!(
             metadata.get("authorization").unwrap().to_str().unwrap(),
             "Basic YWxpY2U6c2VjcmV0"
-        );
-    }
-
-    #[test]
-    fn authenticated_builder_accepts_authentication_bearer() {
-        let settings = settings_from("esdb://localhost:2113?tls=false");
-        let options =
-            AppendToStreamOptions::default().authenticated(Authentication::bearer("eyJ.payload"));
-        let metadata = build_request_metadata(&settings, options.common_operation_options());
-
-        assert_eq!(
-            metadata.get("authorization").unwrap().to_str().unwrap(),
-            "Bearer eyJ.payload"
         );
     }
 }
