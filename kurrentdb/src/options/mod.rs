@@ -1,6 +1,6 @@
 use std::time::Duration;
 
-use crate::Credentials;
+use crate::Authentication;
 
 pub mod append_to_stream;
 pub mod batch_append;
@@ -21,7 +21,7 @@ pub(crate) trait Options {
 
 #[derive(Clone, Default)]
 pub(crate) struct CommonOperationOptions {
-    pub(crate) credentials: Option<Credentials>,
+    pub(crate) authentication: Option<Authentication>,
     pub(crate) requires_leader: bool,
     pub(crate) deadline: Option<Duration>,
 }

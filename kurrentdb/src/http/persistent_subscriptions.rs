@@ -33,14 +33,8 @@ pub(crate) async fn replay_parked_messages(
         builder = builder.query(&[("stopAt", stop_at.to_string().as_str())])
     }
 
-    builder = super::http_configure_auth(
-        builder,
-        options
-            .common_operation_options
-            .credentials
-            .as_ref()
-            .or_else(|| settings.default_authenticated_user().as_ref()),
-    );
+    let auth = super::resolve_authentication(&options.common_operation_options, settings);
+    builder = super::http_configure_auth(builder, auth.as_ref());
 
     super::http_execute_request(builder).await?;
 
@@ -132,14 +126,8 @@ pub(crate) async fn list_all_persistent_subscriptions(
         .get(format!("{}/subscriptions", handle.url()))
         .header("content-type", "application/json");
 
-    builder = super::http_configure_auth(
-        builder,
-        options
-            .common_operation_options
-            .credentials
-            .as_ref()
-            .or_else(|| settings.default_authenticated_user().as_ref()),
-    );
+    let auth = super::resolve_authentication(&options.common_operation_options, settings);
+    builder = super::http_configure_auth(builder, auth.as_ref());
 
     let resp = super::http_execute_request(builder).await?;
 
@@ -179,14 +167,8 @@ where
         ))
         .header("content-type", "application/json");
 
-    builder = super::http_configure_auth(
-        builder,
-        options
-            .common_operation_options
-            .credentials
-            .as_ref()
-            .or_else(|| settings.default_authenticated_user().as_ref()),
-    );
+    let auth = super::resolve_authentication(&options.common_operation_options, settings);
+    builder = super::http_configure_auth(builder, auth.as_ref());
 
     let resp = super::http_execute_request(builder).await?;
 
@@ -228,14 +210,8 @@ where
         ))
         .header("content-type", "application/json");
 
-    builder = super::http_configure_auth(
-        builder,
-        options
-            .common_operation_options
-            .credentials
-            .as_ref()
-            .or_else(|| settings.default_authenticated_user().as_ref()),
-    );
+    let auth = super::resolve_authentication(&options.common_operation_options, settings);
+    builder = super::http_configure_auth(builder, auth.as_ref());
 
     let resp = super::http_execute_request(builder).await?;
 
@@ -258,14 +234,8 @@ pub(crate) async fn restart_persistent_subscription_subsystem(
         .header("content-type", "application/json")
         .header("content-length", "0");
 
-    builder = super::http_configure_auth(
-        builder,
-        options
-            .common_operation_options
-            .credentials
-            .as_ref()
-            .or_else(|| settings.default_authenticated_user().as_ref()),
-    );
+    let auth = super::resolve_authentication(&options.common_operation_options, settings);
+    builder = super::http_configure_auth(builder, auth.as_ref());
 
     super::http_execute_request(builder).await?;
 

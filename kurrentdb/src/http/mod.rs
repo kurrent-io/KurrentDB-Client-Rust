@@ -1,17 +1,33 @@
 use tracing::error;
 pub mod persistent_subscriptions;
 
+/// Resolves the authentication to use for an HTTP call: per-operation override
+/// first, falling back to the connection-string default user.
+pub(crate) fn resolve_authentication(
+    options: &crate::options::CommonOperationOptions,
+    settings: &crate::ClientSettings,
+) -> Option<crate::Authentication> {
+    options.authentication.clone().or_else(|| {
+        settings
+            .default_authenticated_user()
+            .as_ref()
+            .map(|c| crate::Authentication::Basic(c.clone()))
+    })
+}
+
 pub fn http_configure_auth(
     builder: reqwest::RequestBuilder,
-    creds_opt: Option<&crate::Credentials>,
+    auth_opt: Option<&crate::Authentication>,
 ) -> reqwest::RequestBuilder {
-    if let Some(creds) = creds_opt {
-        builder.basic_auth(
+    match auth_opt {
+        Some(crate::Authentication::Basic(creds)) => builder.basic_auth(
             unsafe { std::str::from_utf8_unchecked(creds.login.as_ref()) },
             unsafe { Some(std::str::from_utf8_unchecked(creds.password.as_ref())) },
-        )
-    } else {
-        builder
+        ),
+        Some(crate::Authentication::Bearer(token)) => {
+            builder.bearer_auth(unsafe { std::str::from_utf8_unchecked(token.as_ref()) })
+        }
+        None => builder,
     }
 }
 
