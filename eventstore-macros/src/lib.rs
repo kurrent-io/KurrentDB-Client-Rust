@@ -94,8 +94,7 @@ pub fn options(input: TokenStream) -> TokenStream {
         impl #name {
             /// Performs the command with the given authentication.
             ///
-            /// Accepts either a `Credentials` (Basic auth) or an `Authentication`
-            /// value, the latter allowing Bearer token authentication.
+            /// Accepts `Credentials` or `Authentication` (the latter for Bearer tokens).
             pub fn authenticated<A>(mut self, authentication: A) -> Self
             where
                 A: Into<crate::types::Authentication>,

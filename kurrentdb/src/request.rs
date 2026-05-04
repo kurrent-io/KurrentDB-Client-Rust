@@ -66,8 +66,7 @@ fn build_authorization_header(
     match MetadataValue::try_from(header.as_str()) {
         Ok(value) => Some(value),
         Err(_) => {
-            // HTTP/2 header values reject control characters; an untrimmed newline
-            // in a bearer token would otherwise panic. Token is never logged.
+            // An untrimmed newline in a bearer token would panic. Token is never logged.
             tracing::warn!(
                 auth_kind = auth.kind(),
                 "authentication value contains characters that are not valid in a gRPC metadata header; the Authorization header will be omitted"
@@ -124,8 +123,7 @@ mod auth_tests {
 
     #[test]
     fn bearer_with_invalid_header_chars_returns_none_instead_of_panicking() {
-        // HTTP/2 header values reject NUL, LF, CR, and other control bytes. A token
-        // read from a file or env var with a trailing newline is the realistic case.
+        // Trailing newlines from untrimmed file/env reads are the realistic failure mode.
         for token in ["token\nleak", "token\0bad", "token\rbreak"] {
             let auth = Authentication::bearer(token);
             assert!(

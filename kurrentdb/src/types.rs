@@ -61,16 +61,13 @@ impl Credentials {
 /// plain `Credentials` value unchanged.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Authentication {
-    /// HTTP Basic authentication using login and password.
     Basic(Credentials),
 
-    /// Bearer token authentication. The token is sent verbatim in the
-    /// `Authorization: Bearer <token>` header.
+    /// Sent verbatim in the `Authorization: Bearer <token>` header.
     Bearer(Bytes),
 }
 
 impl Authentication {
-    /// Creates an `Authentication` value using HTTP Basic authentication.
     pub fn basic<S>(login: S, password: S) -> Self
     where
         S: Into<Bytes>,
@@ -78,7 +75,6 @@ impl Authentication {
         Authentication::Basic(Credentials::new(login, password))
     }
 
-    /// Creates an `Authentication` value using Bearer token authentication.
     pub fn bearer<S>(token: S) -> Self
     where
         S: Into<Bytes>,
