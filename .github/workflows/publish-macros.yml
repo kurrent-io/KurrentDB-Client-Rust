@@ -1,4 +1,4 @@
-name: Publish eventstore-macros
+name: Publish kurrentdb-macros
 
 on:
   workflow_dispatch:
@@ -15,18 +15,18 @@ jobs:
       - name: Verify version is new
         run: |
           LOCAL=$(cargo metadata --no-deps --format-version 1 \
-            | jq -r '.packages[] | select(.name=="eventstore-macros") | .version')
-          REMOTE=$(cargo search eventstore-macros --limit 1 \
-            | sed -nE 's/^eventstore-macros = "([^"]+)".*/\1/p')
+            | jq -r '.packages[] | select(.name=="kurrentdb-macros") | .version')
+          REMOTE=$(cargo search kurrentdb-macros --limit 1 \
+            | sed -nE 's/^kurrentdb-macros = "([^"]+)".*/\1/p')
           echo "local=$LOCAL remote=$REMOTE"
           if [ "$LOCAL" = "$REMOTE" ]; then
-            echo "Version $LOCAL is already published on crates.io. Bump eventstore-macros/Cargo.toml first."
+            echo "Version $LOCAL is already published on crates.io. Bump kurrentdb-macros/Cargo.toml first."
             exit 1
           fi
 
       - uses: rust-lang/crates-io-auth-action@v1
         id: auth
 
-      - run: cargo publish -p eventstore-macros
+      - run: cargo publish -p kurrentdb-macros
         env:
           CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}

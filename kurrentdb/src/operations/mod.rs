@@ -1,4 +1,4 @@
-use eventstore_macros::{options, streaming};
+use kurrentdb_macros::{options, streaming};
 use futures::stream::TryStreamExt;
 use std::time::SystemTime;
 use std::{collections::HashMap, time::Duration};

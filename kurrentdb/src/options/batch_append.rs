@@ -1,4 +1,4 @@
-use eventstore_macros::{options, streaming};
+use kurrentdb_macros::{options, streaming};
 
 options! {
     #[derive(Clone, Default)]

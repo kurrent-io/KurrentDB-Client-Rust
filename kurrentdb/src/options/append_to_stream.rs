@@ -1,7 +1,7 @@
 use crate::event_store::client::streams::append_req::options::ExpectedStreamRevision;
 use crate::private::Sealed;
 use crate::{EventData, StreamState};
-use eventstore_macros::options;
+use kurrentdb_macros::options;
 
 options! {
     #[derive(Clone)]

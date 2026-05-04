@@ -5,6 +5,6 @@ members = [
     "kurrentdb-extras",
 
     # internals
-    "eventstore-macros",
+    "kurrentdb-macros",
     "examples"
 ]

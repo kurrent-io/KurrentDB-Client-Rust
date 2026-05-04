@@ -1,6 +1,6 @@
 use crate::options::retry::RetryOptions;
 use crate::{Position, StreamPosition, SubscriptionFilter};
-use eventstore_macros::{options, streaming};
+use kurrentdb_macros::{options, streaming};
 
 options! {
     #[derive(Clone)]
