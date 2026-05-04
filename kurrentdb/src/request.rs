@@ -23,10 +23,8 @@ where
                 .map(|c| Cow::Owned(Authentication::Basic(c.clone())))
         });
 
-    if let Some(auth) = authentication.as_deref() {
-        if let Some(header_value) = build_authorization_header(auth) {
-            metadata.insert("authorization", header_value);
-        }
+    if let Some(header_value) = authentication.as_deref().and_then(build_authorization_header) {
+        metadata.insert("authorization", header_value);
     }
 
     if options.requires_leader || settings.node_preference() == NodePreference::Leader {
@@ -48,30 +46,27 @@ fn build_authorization_header(
 ) -> Option<tonic::metadata::MetadataValue<tonic::metadata::Ascii>> {
     use tonic::metadata::MetadataValue;
 
-    let (header, kind) = match auth {
+    let header = match auth {
         Authentication::Basic(Credentials { login, password }) => {
             let login = String::from_utf8_lossy(login);
             let password = String::from_utf8_lossy(password);
             let encoded = base64::engine::general_purpose::STANDARD
                 .encode(format!("{}:{}", login, password));
-            (format!("Basic {}", encoded), "basic")
+            format!("Basic {}", encoded)
         }
         Authentication::Bearer(token) => {
             let token = String::from_utf8_lossy(token);
-            (format!("Bearer {}", token), "bearer")
+            format!("Bearer {}", token)
         }
     };
 
     match MetadataValue::try_from(header.as_str()) {
         Ok(value) => Some(value),
         Err(_) => {
-            // HTTP/2 header values reject control characters (NUL, LF, CR, others < 0x20
-            // except tab, plus DEL). Bearer tokens are sent verbatim, so an untrimmed
-            // trailing newline or similar in the token would panic if we used `.expect()`.
-            // We skip the header instead; the server will respond with AccessDenied, and
-            // this log explains why. The token itself is never logged.
+            // HTTP/2 header values reject control characters; an untrimmed newline
+            // in a bearer token would otherwise panic. Token is never logged.
             tracing::warn!(
-                auth_kind = kind,
+                auth_kind = auth.kind(),
                 "authentication value contains characters that are not valid in a gRPC metadata header; the Authorization header will be omitted"
             );
             None
@@ -84,6 +79,12 @@ mod auth_tests {
     use super::*;
     use crate::AppendToStreamOptions;
     use crate::options::Options;
+
+    fn settings_from(connection_string: &str) -> ClientSettings {
+        connection_string
+            .parse::<ClientSettings>()
+            .expect("valid connection string")
+    }
 
     #[test]
     fn basic_authentication_produces_base64_basic_header() {
@@ -119,18 +120,17 @@ mod auth_tests {
     }
 
     #[test]
-    fn bearer_with_embedded_newline_returns_none_instead_of_panicking() {
-        // HTTP/2 header values reject embedded LF. A token with a trailing newline is
-        // a realistic failure mode (e.g. read from a file without trimming). The function
-        // must not panic; it must return None so the caller skips the header.
-        let auth = Authentication::bearer("token\nleak");
-        assert!(build_authorization_header(&auth).is_none());
-    }
-
-    #[test]
-    fn bearer_with_embedded_null_returns_none_instead_of_panicking() {
-        let auth = Authentication::bearer("token\0bad");
-        assert!(build_authorization_header(&auth).is_none());
+    fn bearer_with_invalid_header_chars_returns_none_instead_of_panicking() {
+        // HTTP/2 header values reject NUL, LF, CR, and other control bytes. A token
+        // read from a file or env var with a trailing newline is the realistic case.
+        for token in ["token\nleak", "token\0bad", "token\rbreak"] {
+            let auth = Authentication::bearer(token);
+            assert!(
+                build_authorization_header(&auth).is_none(),
+                "expected None for {:?}",
+                token
+            );
+        }
     }
 
     #[test]
@@ -138,16 +138,8 @@ mod auth_tests {
         let settings = settings_from("esdb://localhost:2113?tls=false");
         let options = AppendToStreamOptions::default()
             .authenticated(Authentication::bearer("token\nleak"));
-        // Must not panic. The authorization header should simply be absent so the server
-        // responds with AccessDenied rather than the client crashing.
         let metadata = build_request_metadata(&settings, options.common_operation_options());
         assert!(metadata.get("authorization").is_none());
-    }
-
-    fn settings_from(connection_string: &str) -> ClientSettings {
-        connection_string
-            .parse::<ClientSettings>()
-            .expect("valid connection string")
     }
 
     #[test]

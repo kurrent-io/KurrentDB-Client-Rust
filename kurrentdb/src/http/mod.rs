@@ -19,6 +19,8 @@ pub fn http_configure_auth(
     builder: reqwest::RequestBuilder,
     auth_opt: Option<&crate::Authentication>,
 ) -> reqwest::RequestBuilder {
+    // Lossy decode: non-UTF8 bytes become U+FFFD, which the server will reject as
+    // a bad header rather than this client invoking UB via from_utf8_unchecked.
     match auth_opt {
         Some(crate::Authentication::Basic(creds)) => builder.basic_auth(
             String::from_utf8_lossy(creds.login.as_ref()),

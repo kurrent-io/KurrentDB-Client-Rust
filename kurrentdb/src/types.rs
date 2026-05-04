@@ -85,6 +85,13 @@ impl Authentication {
     {
         Authentication::Bearer(token.into())
     }
+
+    pub(crate) fn kind(&self) -> &'static str {
+        match self {
+            Authentication::Basic(_) => "basic",
+            Authentication::Bearer(_) => "bearer",
+        }
+    }
 }
 
 impl From<Credentials> for Authentication {
