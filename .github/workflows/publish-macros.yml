@@ -7,8 +7,6 @@ jobs:
   publish:
     runs-on: ubuntu-latest
     environment: CRATES_IO_TOKEN
-    permissions:
-      id-token: write
     steps:
       - uses: actions/checkout@v4
 
@@ -24,9 +22,6 @@ jobs:
             exit 1
           fi
 
-      - uses: rust-lang/crates-io-auth-action@v1
-        id: auth
-
       - run: cargo publish -p kurrentdb-macros
         env:
-          CARGO_REGISTRY_TOKEN: ${{ steps.auth.outputs.token }}
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
