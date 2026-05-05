@@ -28,7 +28,7 @@ chrono = { version = "0.4", default-features = false, features = [
     "serde",
     "now",
 ] }
-eventstore-macros = { path = "../eventstore-macros", version = "0.0.2" }
+kurrentdb-macros = { path = "../kurrentdb-macros", version = "0.0.1" }
 futures = "0.3"
 http = "1"
 hyper = { version = "1", features = ["client"] }

@@ -2,7 +2,7 @@ use crate::{
     PersistentSubscriptionSettings, Position, StreamPosition, SubscriptionFilter,
     SystemConsumerStrategy,
 };
-use eventstore_macros::{options, streaming};
+use kurrentdb_macros::{options, streaming};
 use std::time::Duration;
 
 options! {
