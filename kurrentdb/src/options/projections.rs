@@ -1,4 +1,4 @@
-use eventstore_macros::options;
+use kurrentdb_macros::options;
 
 options! {
     #[derive(Clone, Default)]
