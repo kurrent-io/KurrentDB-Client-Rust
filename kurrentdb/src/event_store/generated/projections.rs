@@ -10,6 +10,8 @@ pub mod create_req {
     pub struct Options {
         #[prost(string, tag = "4")]
         pub query: ::prost::alloc::string::String,
+        #[prost(int32, tag = "5")]
+        pub engine_version: i32,
         #[prost(oneof = "options::Mode", tags = "1, 2, 3")]
         pub mode: ::core::option::Option<options::Mode>,
     }
