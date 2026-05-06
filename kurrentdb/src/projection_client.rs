@@ -74,6 +74,7 @@ impl ProjectionClient {
             options,
             projections::create_req::Options {
                 query: query.clone(),
+                engine_version: options.engine_version.as_i32(),
                 mode: Some(projections::create_req::options::Mode::Continuous(
                     projections::create_req::options::Continuous {
                         name: name.as_ref().to_string(),
