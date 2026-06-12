@@ -896,6 +896,7 @@ impl NodeConnection {
 
         let mut http = HttpConnector::new();
         http.enforce_http(false);
+        http.set_nodelay(true);
 
         let connector = tower::ServiceBuilder::new()
             .layer_fn(move |s| {
