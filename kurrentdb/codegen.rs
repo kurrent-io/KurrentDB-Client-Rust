@@ -38,6 +38,7 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
         "protos/monitoring.proto",
         "protos/operations.proto",
         "protos/users.proto",
+        "protos/multi-append.proto",
     ];
 
     fs::create_dir_all(out_dir)?;
@@ -52,6 +53,8 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
             "ReadEvent.RecordedEvent.custom_metadata",
             "ReadEvent.RecordedEvent.data",
             "StreamIdentifier.stream_name",
+            "AppendRecord.data",
+            "DynamicValue.bytes_value",
         ])
         .out_dir(out_dir)
         .extern_path(".event_store.client.Empty", "()")
@@ -90,6 +93,9 @@ pub fn generate() -> Result<(), Box<dyn std::error::Error>> {
             fs::rename(file.path(), new_file)?;
         } else if filename_string.as_str() == "google.rpc.rs" {
             let new_file = file.path().parent().unwrap().join("google_rpc.rs");
+            fs::rename(file.path(), new_file)?;
+        } else if filename_string.as_str() == "kurrentdb.protocol.v2.rs" {
+            let new_file = file.path().parent().unwrap().join("new_streams.rs");
             fs::rename(file.path(), new_file)?;
         }
     }
